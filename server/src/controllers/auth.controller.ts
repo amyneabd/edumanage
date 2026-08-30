@@ -282,6 +282,7 @@ export async function me(req: Request, res: Response) {
     role: req.user.role,
     status: req.user.status,
     emailVerified: Boolean(req.user.emailVerifiedAt),
+    emailVerificationRequired: env.requireEmailVerification,
     teacherCode: teacherProfile?.teacherCode ?? null,
     parentCode: pupilProfile?.parentCode ?? null,
   });

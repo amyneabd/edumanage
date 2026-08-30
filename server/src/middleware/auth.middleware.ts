@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
 import { verifyToken } from "../utils/jwt.js";
 import { prisma } from "../utils/prisma.js";
+import { env } from "../utils/env.js";
 import type { Role, UserStatus } from "@prisma/client";
 
 export interface AuthedUser {
@@ -65,6 +66,10 @@ export function requireActive(req: Request, res: Response, next: NextFunction) {
 }
 
 export function requireEmailVerified(req: Request, res: Response, next: NextFunction) {
+  if (!env.requireEmailVerification) {
+    next();
+    return;
+  }
   if (!req.user || !req.user.emailVerifiedAt) {
     res.status(403).json({ error: "Email address is not verified" });
     return;

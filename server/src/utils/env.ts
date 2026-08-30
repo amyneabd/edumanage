@@ -37,6 +37,13 @@ const supabaseStorage = supabaseUrl
     }
   : null;
 
+// Email verification enforcement is temporarily disabled by setting this to
+// "false" — Resend's sandbox sender only delivers to the Resend account
+// owner's own email until a sending domain is verified, so requiring
+// verification would lock every other registrant out. Defaults to required
+// (true) so this stays opt-out, not opt-in: unset behaves exactly as before.
+const requireEmailVerification = process.env.REQUIRE_EMAIL_VERIFICATION !== "false";
+
 export const env = {
   port: Number(process.env.PORT ?? 4000),
   jwtSecret: required("JWT_SECRET"),
@@ -45,5 +52,6 @@ export const env = {
   adminPassword: required("ADMIN_PASSWORD"),
   resend,
   supabaseStorage,
+  requireEmailVerification,
   isProduction: process.env.NODE_ENV === "production",
 };

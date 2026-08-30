@@ -28,3 +28,9 @@ services:
         sync: false
       - key: MAIL_FROM
         sync: false
+      # Temporary: Resend has no verified sending domain yet, so delivery is
+      # restricted to the Resend account owner's own email. Disables the
+      # email-verification gate until a domain is verified — see
+      # server/.env.example for details. Not a secret, so committed directly.
+      - key: REQUIRE_EMAIL_VERIFICATION
+        value: "false"

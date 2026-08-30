@@ -23,6 +23,7 @@ export interface Me {
   role: Role;
   status: UserStatus;
   emailVerified: boolean;
+  emailVerificationRequired: boolean;
   teacherCode: string | null;
   parentCode: string | null;
 }
