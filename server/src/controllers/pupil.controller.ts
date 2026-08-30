@@ -10,6 +10,7 @@ import {
   listOtherClassesForPupil,
   listOwnVisitRequests,
 } from "../services/visit.service.js";
+import { saveFile } from "../utils/storage.js";
 
 export async function home(req: Request, res: Response) {
   try {
@@ -87,10 +88,11 @@ export async function submitExam(req: Request, res: Response) {
     return;
   }
   try {
+    const saved = await saveFile(file.buffer, file.originalname, file.mimetype);
     const submission = await submitToExam({
       postId: req.params.postId as string,
       pupilId: req.user!.id,
-      fileUrl: `/uploads/${file.filename}`,
+      fileUrl: saved.url,
       fileName: file.originalname,
     });
     res.status(201).json(submission);

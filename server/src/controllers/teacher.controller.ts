@@ -1,9 +1,8 @@
-import fs from "node:fs";
 import path from "node:path";
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { prisma } from "../utils/prisma.js";
-import { uploadsDir } from "../middleware/upload.middleware.js";
+import { saveFile, deleteFile } from "../utils/storage.js";
 import {
   ClassError,
   assignPupilToClass,
@@ -298,6 +297,7 @@ export async function createPostHandler(req: Request, res: Response) {
   }
 
   const file = req.file;
+  const saved = file ? await saveFile(file.buffer, file.originalname, file.mimetype) : null;
   const parsedMaxGrade =
     maxGrade !== undefined && maxGrade !== "" ? Number(maxGrade) : null;
   const post = await createPost({
@@ -305,7 +305,7 @@ export async function createPostHandler(req: Request, res: Response) {
     authorId: req.user!.id,
     type,
     content: content || undefined,
-    fileUrl: file ? `/uploads/${file.filename}` : undefined,
+    fileUrl: saved?.url,
     fileName: file ? file.originalname : undefined,
     dueDate: dueDate || undefined,
     maxGrade: parsedMaxGrade !== null && !Number.isNaN(parsedMaxGrade) ? parsedMaxGrade : null,
@@ -318,16 +318,16 @@ export async function updatePostHandler(req: Request, res: Response) {
   const file = req.file;
   try {
     const previous = file ? await prisma.post.findUnique({ where: { id: req.params.id as string } }) : null;
+    const saved = file ? await saveFile(file.buffer, file.originalname, file.mimetype) : null;
     const post = await updatePost(req.params.id as string, req.user!.id, {
       content: content !== undefined ? content : undefined,
       dueDate: dueDate !== undefined ? dueDate : undefined,
-      fileUrl: file ? `/uploads/${file.filename}` : undefined,
+      fileUrl: saved?.url,
       fileName: file ? file.originalname : undefined,
       maxGrade: maxGrade !== undefined ? (maxGrade === "" ? null : Number(maxGrade)) : undefined,
     });
     if (file && previous?.fileUrl && previous.fileUrl !== post.fileUrl) {
-      const oldPath = path.join(uploadsDir, path.basename(previous.fileUrl));
-      fs.unlink(oldPath, () => {});
+      await deleteFile(path.basename(previous.fileUrl));
     }
     res.json(post);
   } catch (err) {
@@ -339,8 +339,7 @@ export async function deletePostHandler(req: Request, res: Response) {
   try {
     const post = await deletePost(req.params.id as string, req.user!.id);
     if (post.fileUrl) {
-      const filePath = path.join(uploadsDir, path.basename(post.fileUrl));
-      fs.unlink(filePath, () => {});
+      await deleteFile(path.basename(post.fileUrl));
     }
     res.status(204).send();
   } catch (err) {
