@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  TEACHER
+  PUPIL
+  PARENT
+}
+
+enum UserStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+}
+
+enum ClassType {
+  SCIENCE
+  MATH
+  INFO
+  ECO
+}
+
+enum PaymentStatus {
+  PAID
+  UNPAID
+  INCOMPLETE
+}
+
+enum PostType {
+  TEXT
+  FILE
+  EXAM
+}
+
+enum NotificationType {
+  PUPIL_REQUEST
+  EXAM_SUBMISSION
+  PAYMENT_DUE
+  MONTHLY_RECAP
+  VISIT_REQUEST
+  PARENT_REQUEST
+  POST_PUBLISHED
+  ABSENCE
+  SUBMISSION_MISSING
+}
+
+enum AttendanceStatus {
+  PRESENT
+  ABSENT
+}
+
+enum VisitRequestStatus {
+  PENDING
+  APPROVED
+  DECLINED
+}
+
+enum ParentLinkStatus {
+  PENDING
+  ACTIVE
+  REJECTED
+}
+
+model User {
+  id                     String                  @id @default(cuid())
+  email                  String                  @unique
+  passwordHash           String
+  name                   String
+  role                   Role
+  status                 UserStatus              @default(PENDING)
+  emailVerifiedAt        DateTime?
+  createdAt              DateTime                @default(now())
+  teacherProfile         TeacherProfile?
+  pupilProfile           PupilProfile?
+  parentProfile          ParentProfile?
+  passwordResetTokens    PasswordResetToken[]
+  emailVerificationTokens EmailVerificationToken[]
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model EmailVerificationToken {
+  id        String    @id @default(cuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+}
+
+model TeacherProfile {
+  userId        String         @id
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teacherCode   String         @unique
+  classes       Class[]
+  notifications Notification[]
+  goals         Goal[]
+}
+
+model PupilProfile {
+  userId        String           @id
+  user          User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  requestedType ClassType
+  teacherId     String
+  classId       String?
+  class         Class?           @relation(fields: [classId], references: [id])
+  parentCode    String           @unique
+  phone         String           @default("")
+  parentPhone   String           @default("")
+  payments      PaymentRecord[]
+  submissions   PostSubmission[]
+  attendance    AttendanceRecord[]
+  visitRequests VisitRequest[]
+  parentLinks   ParentLink[]
+}
+
+model ParentProfile {
+  userId        String          @id
+  user          User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  links         ParentLink[]
+  notifications Notification[]
+}
+
+model ParentLink {
+  id          String           @id @default(cuid())
+  parentId    String
+  parent      ParentProfile    @relation(fields: [parentId], references: [userId], onDelete: Cascade)
+  pupilId     String
+  pupil       PupilProfile     @relation(fields: [pupilId], references: [userId], onDelete: Cascade)
+  teacherId   String
+  status      ParentLinkStatus @default(PENDING)
+  requestedAt DateTime         @default(now())
+  respondedAt DateTime?
+
+  @@unique([parentId, pupilId])
+  @@index([pupilId, status])
+  @@index([teacherId, status])
+}
+
+model Class {
+  id            String         @id @default(cuid())
+  teacherId     String
+  teacher       TeacherProfile @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
+  name          String
+  type          ClassType
+  monthlyFee    Float?
+  pupils        PupilProfile[]
+  scheduleSlots ScheduleSlot[]
+  posts         Post[]
+  attendance    AttendanceRecord[]
+  visitRequests VisitRequest[]
+  createdAt     DateTime       @default(now())
+}
+
+model ScheduleSlot {
+  id        String @id @default(cuid())
+  classId   String
+  class     Class  @relation(fields: [classId], references: [id], onDelete: Cascade)
+  dayOfWeek Int
+  startTime String
+  endTime   String
+}
+
+model PaymentRecord {
+  id         String        @id @default(cuid())
+  pupilId    String
+  pupil      PupilProfile  @relation(fields: [pupilId], references: [userId], onDelete: Cascade)
+  period     String
+  status     PaymentStatus @default(UNPAID)
+  amountDue  Float?
+  amountPaid Float         @default(0)
+  dueDate    DateTime?
+  paidAt     DateTime?
+  updatedAt  DateTime      @updatedAt
+
+  @@unique([pupilId, period])
+}
+
+model Post {
+  id          String           @id @default(cuid())
+  classId     String
+  class       Class            @relation(fields: [classId], references: [id], onDelete: Cascade)
+  authorId    String
+  type        PostType
+  content     String?
+  fileUrl     String?
+  fileName    String?
+  dueDate     DateTime?
+  maxGrade    Float?
+  createdAt   DateTime         @default(now())
+  editedAt    DateTime?
+  submissions PostSubmission[]
+}
+
+model PostSubmission {
+  id          String       @id @default(cuid())
+  postId      String
+  post        Post         @relation(fields: [postId], references: [id], onDelete: Cascade)
+  pupilId     String
+  pupil       PupilProfile @relation(fields: [pupilId], references: [userId], onDelete: Cascade)
+  fileUrl     String
+  fileName    String
+  submittedAt DateTime     @default(now())
+  grade       Float?
+  feedback    String?
+  gradedAt    DateTime?
+
+  @@unique([postId, pupilId])
+}
+
+model AttendanceRecord {
+  id        String           @id @default(cuid())
+  pupilId   String
+  pupil     PupilProfile     @relation(fields: [pupilId], references: [userId], onDelete: Cascade)
+  classId   String
+  class     Class            @relation(fields: [classId], references: [id], onDelete: Cascade)
+  date      DateTime
+  status    AttendanceStatus
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+
+  @@unique([pupilId, date])
+  @@index([classId, date])
+}
+
+model VisitRequest {
+  id          String             @id @default(cuid())
+  pupilId     String
+  pupil       PupilProfile       @relation(fields: [pupilId], references: [userId], onDelete: Cascade)
+  classId     String
+  class       Class              @relation(fields: [classId], references: [id], onDelete: Cascade)
+  sessionDate DateTime
+  reason      String?
+  status      VisitRequestStatus @default(PENDING)
+  createdAt   DateTime           @default(now())
+  respondedAt DateTime?
+
+  @@index([classId, status])
+  @@index([pupilId])
+}
+
+model Goal {
+  id           String    @id @default(cuid())
+  teacherId    String
+  teacher      TeacherProfile @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
+  period       String
+  title        String
+  targetCount  Int?
+  currentCount Int       @default(0)
+  achieved     Boolean   @default(false)
+  achievedAt   DateTime?
+  createdAt    DateTime  @default(now())
+
+  @@index([teacherId, period])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  teacherId String?
+  teacher   TeacherProfile?  @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
+  parentId  String?
+  parent    ParentProfile?   @relation(fields: [parentId], references: [userId], onDelete: Cascade)
+  type      NotificationType
+  title     String
+  body      String
+  link      String?
+  read      Boolean          @default(false)
+  dedupeKey String?
+  createdAt DateTime         @default(now())
+
+  @@unique([teacherId, dedupeKey])
+  @@unique([parentId, dedupeKey])
+  @@index([teacherId, read])
+  @@index([parentId, read])
+}

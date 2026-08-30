@@ -1,0 +1,76 @@
+import { Link } from "react-router-dom";
+import { Card } from "../../components/Card";
+import { ClassTypeBadge } from "../../components/Badge";
+import { EmptyState } from "../../components/Feedback";
+import { DAY_NAMES } from "../../lib/period";
+import type { ScheduleEntry } from "../../api/types";
+
+function minutesSinceMidnight(time: string): number {
+  const [h, m] = time.split(":").map(Number);
+  return (h ?? 0) * 60 + (m ?? 0);
+}
+
+function dayLabel(offsetDays: number, dayOfWeek: number): string {
+  if (offsetDays === 0) return "Today";
+  if (offsetDays === 1) return "Tomorrow";
+  return DAY_NAMES[dayOfWeek] ?? "";
+}
+
+export function UpcomingSchedule({ schedule }: { schedule: ScheduleEntry[] }) {
+  const now = new Date();
+  const nowMinutes = now.getHours() * 60 + now.getMinutes();
+  const today = now.getDay();
+
+  const upcoming = schedule
+    .map((entry) => {
+      let offsetDays = (entry.dayOfWeek - today + 7) % 7;
+      if (offsetDays === 0 && minutesSinceMidnight(entry.endTime) <= nowMinutes) {
+        offsetDays = 7;
+      }
+      const sortKey = offsetDays * 1440 + minutesSinceMidnight(entry.startTime);
+      return { ...entry, offsetDays, sortKey };
+    })
+    .sort((a, b) => a.sortKey - b.sortKey)
+    .slice(0, 5);
+
+  return (
+    <Card className="p-6">
+      <h2 className="text-sm font-medium text-ink-700">Upcoming sessions</h2>
+      {upcoming.length === 0 ? (
+        <div className="mt-4">
+          <EmptyState
+            title="No scheduled sessions"
+            description="Add a weekly schedule from a class's detail page."
+          />
+        </div>
+      ) : (
+        <ul className="mt-4 space-y-2">
+          {upcoming.map((entry, i) => (
+            <li key={`${entry.classId}-${entry.dayOfWeek}-${entry.startTime}-${i}`}>
+              <Link
+                to={`/teacher/classes/${entry.classId}`}
+                className="focus-ring flex items-center justify-between rounded-sm px-2 py-2 -mx-2 transition-colors hover:bg-canvas"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="flex w-16 flex-col items-center rounded-sm border border-border bg-canvas py-1.5">
+                    <span className="text-[11px] font-medium uppercase text-ink-500">
+                      {dayLabel(entry.offsetDays, entry.dayOfWeek)}
+                    </span>
+                    <span className="text-xs font-semibold text-ink-900">{entry.startTime}</span>
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-ink-900">{entry.className}</p>
+                    <p className="text-xs text-ink-400">
+                      {entry.startTime}–{entry.endTime}
+                    </p>
+                  </div>
+                </div>
+                <ClassTypeBadge type={entry.classType} />
+              </Link>
+            </li>
+          ))}
+        </ul>
+      )}
+    </Card>
+  );
+}

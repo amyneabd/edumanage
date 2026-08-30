@@ -1,0 +1,13 @@
+node_modules
+dist
+.env
+uploads/*
+!uploads/.gitkeep
+prisma/dev.db
+prisma/migrations/dev
+*.log
+cleanup-qa-pupils.mjs
+qa-setup-gradebook-ledger.mjs
+reset-qa-password.mjs
+seed-pending-request.mjs
+test-notifications.mjs
