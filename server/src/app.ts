@@ -14,6 +14,14 @@ import { parentRouter } from "./routes/parent.routes.js";
 
 export const app = express();
 
+// Render (and most PaaS hosts) put the app behind a single reverse-proxy
+// hop, so req.ip / X-Forwarded-For need this to resolve correctly. Without
+// it, express-rate-limit's IP-based keying logs an
+// ERR_ERL_UNEXPECTED_X_FORWARDED_FOR validation warning on every deploy
+// (harmless on its own, but rate limiting falls back to less accurate
+// keying without this).
+app.set("trust proxy", 1);
+
 app.use(cors({ origin: env.clientOrigin, credentials: true }));
 app.use(cookieParser());
 app.use(express.json());

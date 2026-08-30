@@ -53,6 +53,19 @@ const parentSchema = z.object({
 
 const registerSchema = z.discriminatedUnion("role", [teacherSchema, pupilSchema, parentSchema]);
 
+/**
+ * Fires off a mail-sending call without awaiting it. Auth flows must never
+ * let a slow or unreachable SMTP relay stall (or fail) an HTTP response for
+ * work that has already succeeded (account creation, token issuance) —
+ * mirrors the existing best-effort pattern used by sendParentAlertEmail.
+ * Failures are logged so they're still visible in server logs.
+ */
+function sendMailBestEffort(promise: Promise<{ delivered: boolean }>, context: string): void {
+  promise.catch((err) => {
+    console.error(`[mailer] failed to send ${context}:`, err);
+  });
+}
+
 export async function register(req: Request, res: Response) {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
@@ -70,7 +83,7 @@ export async function register(req: Request, res: Response) {
 
     const verificationToken = await issueEmailVerificationToken(user.id);
     const verifyUrl = `${env.clientOrigin}/verify-email?token=${verificationToken}`;
-    const { delivered } = await sendVerificationEmail(user.email, verifyUrl);
+    sendMailBestEffort(sendVerificationEmail(user.email, verifyUrl), `verification email to ${user.email}`);
 
     const token = signToken({ userId: user.id, role: user.role });
     res.cookie(COOKIE_NAME, token, COOKIE_OPTIONS);
@@ -80,7 +93,7 @@ export async function register(req: Request, res: Response) {
       status: user.status,
       name: user.name,
       // Dev convenience only: surface the link when there's no SMTP to deliver it.
-      devVerifyUrl: !delivered && !env.isProduction ? verifyUrl : undefined,
+      devVerifyUrl: !env.smtp && !env.isProduction ? verifyUrl : undefined,
     });
   } catch (err) {
     if (err instanceof AuthError) {
@@ -137,12 +150,12 @@ export async function forgotPassword(req: Request, res: Response) {
 
   if (result) {
     const resetUrl = `${env.clientOrigin}/reset-password?token=${result.token}`;
-    const { delivered } = await sendPasswordResetEmail(result.user.email, resetUrl);
+    sendMailBestEffort(sendPasswordResetEmail(result.user.email, resetUrl), `password reset email to ${result.user.email}`);
 
     // Dev convenience only: when there's no SMTP to actually deliver the
     // email, surface the link in the response so local testing doesn't
     // require reading server logs. Never done in production.
-    if (!delivered && !env.isProduction) {
+    if (!env.smtp && !env.isProduction) {
       res.json({ message: GENERIC_RESET_MESSAGE, devResetUrl: resetUrl });
       return;
     }
@@ -207,8 +220,8 @@ export async function resendVerificationHandler(req: Request, res: Response) {
   const result = await resendVerificationEmail(req.user.id);
   if (result) {
     const verifyUrl = `${env.clientOrigin}/verify-email?token=${result.token}`;
-    const { delivered } = await sendVerificationEmail(result.email, verifyUrl);
-    if (!delivered && !env.isProduction) {
+    sendMailBestEffort(sendVerificationEmail(result.email, verifyUrl), `verification email to ${result.email}`);
+    if (!env.smtp && !env.isProduction) {
       res.json({ message: "Verification email sent.", devVerifyUrl: verifyUrl });
       return;
     }

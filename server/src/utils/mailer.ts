@@ -11,6 +11,14 @@ function getTransporter(): nodemailer.Transporter | null {
       port: env.smtp.port,
       secure: env.smtp.port === 465,
       auth: { user: env.smtp.user, pass: env.smtp.pass },
+      // Without explicit timeouts, nodemailer's defaults (multi-minute) let a
+      // slow or unreachable SMTP relay hang for a very long time. These
+      // sends are fire-and-forget from the caller's perspective (see
+      // auth.controller.ts), so failing fast just means a quicker retry/log
+      // rather than a stalled connection.
+      connectionTimeout: 10_000,
+      greetingTimeout: 10_000,
+      socketTimeout: 10_000,
     });
   }
   return transporter;
