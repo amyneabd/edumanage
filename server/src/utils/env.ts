@@ -21,6 +21,19 @@ const smtp = smtpHost
     }
   : null;
 
+// Supabase Storage is optional: if SUPABASE_URL isn't set, storage.ts falls
+// back to writing uploads to local disk instead of failing startup. If
+// SUPABASE_URL IS set, the rest of the SUPABASE_* vars become required so
+// misconfiguration fails fast rather than silently dropping uploads.
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseStorage = supabaseUrl
+  ? {
+      url: supabaseUrl,
+      serviceRoleKey: required("SUPABASE_SERVICE_ROLE_KEY"),
+      bucket: required("SUPABASE_STORAGE_BUCKET"),
+    }
+  : null;
+
 export const env = {
   port: Number(process.env.PORT ?? 4000),
   jwtSecret: required("JWT_SECRET"),
@@ -28,5 +41,6 @@ export const env = {
   adminEmail: required("ADMIN_EMAIL"),
   adminPassword: required("ADMIN_PASSWORD"),
   smtp,
+  supabaseStorage,
   isProduction: process.env.NODE_ENV === "production",
 };
