@@ -3,7 +3,7 @@ services:
     name: edumanage
     env: node
     plan: free
-    buildCommand: npm ci && npm run prisma:generate --workspace server && npm run build && npm run prisma:migrate:deploy --workspace server
+    buildCommand: npm ci --include=dev && npm run prisma:generate --workspace server && npm run build && npm run prisma:migrate:deploy --workspace server
     startCommand: node server/dist/server.js
     envVars:
       - key: NODE_ENV

@@ -149,12 +149,16 @@ the same "optional, becomes required together" pattern already used for
 
 Add `render.yaml` at the repo root defining one web service:
 
-- **Build command**: `npm ci && npm run prisma:generate --workspace server && npm run build && npm run prisma:migrate:deploy --workspace server`
+- **Build command**: `npm ci --include=dev && npm run prisma:generate --workspace server && npm run build && npm run prisma:migrate:deploy --workspace server`
   (new `prisma:migrate:deploy` script wrapping `prisma migrate deploy`
   — safe to re-run on every deploy, only applies pending migrations.
   Prisma Client must be generated before `build` compiles against it —
   generating after `build` fails on a clean checkout, since
-  `@prisma/client`'s install-time stub isn't a real client yet.)
+  `@prisma/client`'s install-time stub isn't a real client yet.
+  `--include=dev` is required because the `NODE_ENV=production` env var
+  below is also visible during the build step, which makes `npm ci`
+  omit devDependencies like `typescript`/`vite`/`@types/node` by
+  default — breaking the client/server build — unless overridden.)
 - **Start command**: `node server/dist/server.js`.
 - **Env vars**: `DATABASE_URL`, `SUPABASE_URL`,
   `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`, `JWT_SECRET`,
