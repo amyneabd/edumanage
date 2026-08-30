@@ -93,7 +93,7 @@ export async function register(req: Request, res: Response) {
       status: user.status,
       name: user.name,
       // Dev convenience only: surface the link when there's no SMTP to deliver it.
-      devVerifyUrl: !env.smtp && !env.isProduction ? verifyUrl : undefined,
+      devVerifyUrl: !env.resend && !env.isProduction ? verifyUrl : undefined,
     });
   } catch (err) {
     if (err instanceof AuthError) {
@@ -155,7 +155,7 @@ export async function forgotPassword(req: Request, res: Response) {
     // Dev convenience only: when there's no SMTP to actually deliver the
     // email, surface the link in the response so local testing doesn't
     // require reading server logs. Never done in production.
-    if (!env.smtp && !env.isProduction) {
+    if (!env.resend && !env.isProduction) {
       res.json({ message: GENERIC_RESET_MESSAGE, devResetUrl: resetUrl });
       return;
     }
@@ -221,7 +221,7 @@ export async function resendVerificationHandler(req: Request, res: Response) {
   if (result) {
     const verifyUrl = `${env.clientOrigin}/verify-email?token=${result.token}`;
     sendMailBestEffort(sendVerificationEmail(result.email, verifyUrl), `verification email to ${result.email}`);
-    if (!env.smtp && !env.isProduction) {
+    if (!env.resend && !env.isProduction) {
       res.json({ message: "Verification email sent.", devVerifyUrl: verifyUrl });
       return;
     }

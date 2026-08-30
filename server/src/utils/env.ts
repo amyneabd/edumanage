@@ -6,18 +6,21 @@ function required(name: string): string {
   return value;
 }
 
-// SMTP is optional: if SMTP_HOST isn't set, mailer.ts falls back to logging
-// reset links to the console instead of failing startup. If SMTP_HOST IS
-// set, the rest of the SMTP_* vars become required so misconfiguration
-// fails fast rather than silently dropping emails.
-const smtpHost = process.env.SMTP_HOST;
-const smtp = smtpHost
+// Outbound mail goes through Resend's HTTP API (not SMTP): many PaaS hosts
+// (Render included) block or silently drop outbound SMTP connections, while
+// a plain HTTPS call is unaffected. Optional, same pattern as before: if
+// RESEND_API_KEY isn't set, mailer.ts falls back to logging links to the
+// console instead of failing startup.
+const resendApiKey = process.env.RESEND_API_KEY;
+const resend = resendApiKey
   ? {
-      host: smtpHost,
-      port: Number(process.env.SMTP_PORT ?? 587),
-      user: required("SMTP_USER"),
-      pass: required("SMTP_PASS"),
-      from: process.env.SMTP_FROM ?? "Bachandi <no-reply@bachandi.app>",
+      apiKey: resendApiKey,
+      // "bachandi.app" isn't a verified sending domain in Resend, so Resend
+      // hard-rejects (403) any `from` address on it. Their default sandbox
+      // sender works today without domain verification, at the cost of the
+      // documented sandbox restriction (delivery limited to the Resend
+      // account owner's own email until a real domain is verified).
+      from: process.env.MAIL_FROM ?? "Bachandi <onboarding@resend.dev>",
     }
   : null;
 
@@ -40,7 +43,7 @@ export const env = {
   clientOrigin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
   adminEmail: required("ADMIN_EMAIL"),
   adminPassword: required("ADMIN_PASSWORD"),
-  smtp,
+  resend,
   supabaseStorage,
   isProduction: process.env.NODE_ENV === "production",
 };

@@ -30,13 +30,23 @@ of local disk.
   GitHub repo; we initialize git locally, commit, and push. Render
   deploys from this repo (via `render.yaml` blueprint or manual dashboard
   connection).
-- **SMTP**: already configured for local dev via Resend
-  (`server/.env`: `SMTP_HOST=smtp.resend.com`, etc. — see
-  [mailer.ts](../../../server/src/utils/mailer.ts)). Same env vars carry
-  over to Render, no code changes needed. Note: without a verified
-  sending domain in Resend, delivery is restricted to the Resend
-  account owner's own email — fine for initial smoke-testing, revisit
-  before onboarding real users.
+- **Email delivery**: originally planned as SMTP via Resend
+  (`smtp.resend.com`), carried over unchanged from local dev. Post-launch,
+  this was found to hang/fail in production: Render's network doesn't
+  complete outbound SMTP connections to Resend (confirmed via
+  `ETIMEDOUT`/`CONN`-stage failures across all resolved IPv4/IPv6
+  addresses), which also caused the account-creation request itself to
+  stall since it awaited mail delivery before responding. Fixed by
+  switching [mailer.ts](../../../server/src/utils/mailer.ts) to Resend's
+  HTTP API (`RESEND_API_KEY`, plain HTTPS POST) instead of SMTP, and by
+  making mail delivery fire-and-forget in the auth flows (register,
+  forgot-password, resend-verification) so a slow/failed send can never
+  block or fail the HTTP response. Note: without a verified sending
+  domain in Resend, delivery is restricted to the Resend account owner's
+  own email (and the `from` address must be Resend's sandbox sender,
+  `onboarding@resend.dev`, since a custom domain's `from` address is
+  rejected outright until verified) — fine for initial smoke-testing,
+  revisit before onboarding real users.
 
 ## Architecture
 
@@ -163,8 +173,8 @@ Add `render.yaml` at the repo root defining one web service:
 - **Env vars**: `DATABASE_URL`, `SUPABASE_URL`,
   `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_STORAGE_BUCKET`, `JWT_SECRET`,
   `CLIENT_ORIGIN` (same Render URL — same-origin, but still used for
-  building email links), `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `SMTP_HOST`,
-  `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `SMTP_FROM`,
+  building email links), `ADMIN_EMAIL`, `ADMIN_PASSWORD`,
+  `RESEND_API_KEY`, `MAIL_FROM`,
   `NODE_ENV=production`. Secrets marked `sync: false` in the blueprint
   so real values are pasted into Render's dashboard, never committed.
 
