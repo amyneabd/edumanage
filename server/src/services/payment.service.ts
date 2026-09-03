@@ -184,28 +184,11 @@ export async function getPupilLedger(teacherId: string, pupilId: string) {
   const pupil = await prisma.pupilProfile.findFirst({ where: { userId: pupilId, teacherId }, include: { class: true } });
   if (!pupil) throw new PaymentError("Pupil not found.", 404);
 
-  const payments = await prisma.paymentRecord.findMany({ where: { pupilId } });
+  const [payments, attendanceRecords] = await Promise.all([
+    prisma.paymentRecord.findMany({ where: { pupilId } }),
+    prisma.attendanceRecord.findMany({ where: { pupilId }, select: { date: true, status: true } }),
+  ]);
   const paymentByPeriod = new Map(payments.map((p) => [p.period, p]));
-
-  // Every billed period gets a row, plus the live period even if it hasn't
-  // been billed yet (mirrors the missing-record-defaults-to-UNPAID
-  // convention used elsewhere, e.g. getLedger/getPaymentSummary).
-  const period = currentPeriod();
-  const periods = new Set(paymentByPeriod.keys());
-  periods.add(period);
-  const sortedPeriods = Array.from(periods).sort().reverse();
-
-  const oldest = sortedPeriods[sortedPeriods.length - 1]!;
-  const newest = sortedPeriods[0]!;
-  const [oldestYear, oldestMonth] = oldest.split("-").map(Number);
-  const [newestYear, newestMonth] = newest.split("-").map(Number);
-  const rangeStart = new Date(oldestYear!, oldestMonth! - 1, 1);
-  const rangeEnd = new Date(newestYear!, newestMonth!, 0, 23, 59, 59, 999);
-
-  const attendanceRecords = await prisma.attendanceRecord.findMany({
-    where: { pupilId, date: { gte: rangeStart, lte: rangeEnd } },
-    select: { date: true, status: true },
-  });
 
   const attendanceByPeriod = new Map<string, { present: number; absent: number }>();
   for (const record of attendanceRecords) {
@@ -215,6 +198,14 @@ export async function getPupilLedger(teacherId: string, pupilId: string) {
     else entry.absent += 1;
     attendanceByPeriod.set(key, entry);
   }
+
+  // Every billed period gets a row, every period with recorded attendance
+  // gets a row (even if it was never billed), plus the live period even if
+  // neither exists yet (mirrors the missing-record-defaults-to-UNPAID
+  // convention used elsewhere, e.g. getLedger/getPaymentSummary).
+  const period = currentPeriod();
+  const periods = new Set<string>([...paymentByPeriod.keys(), ...attendanceByPeriod.keys(), period]);
+  const sortedPeriods = Array.from(periods).sort().reverse();
 
   let balance = 0;
   const rows = sortedPeriods.map((p) => {

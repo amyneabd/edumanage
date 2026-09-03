@@ -108,4 +108,21 @@ describe("getPupilLedger", () => {
     const ledger = await getPupilLedger(teacherId, pupilId);
     expect(ledger.balance).toBe(200); // 100 last period + 100 current (unbilled fallback)
   });
+
+  it("includes a row for a period that only has attendance data and was never billed", async () => {
+    const [y, m] = currentPeriod().split("-").map(Number);
+    const oldDate = new Date(y! - 1, m! - 1, 5); // a full year back, definitely never billed in this test
+    const oldPeriod = `${oldDate.getFullYear()}-${String(oldDate.getMonth() + 1).padStart(2, "0")}`;
+
+    await prisma.attendanceRecord.create({
+      data: { pupilId, classId, date: oldDate, status: "PRESENT" },
+    });
+
+    const ledger = await getPupilLedger(teacherId, pupilId);
+    const row = ledger.rows.find((r) => r.period === oldPeriod);
+    expect(row).toBeDefined();
+    expect(row?.present).toBe(1);
+    expect(row?.amountDue).toBe(100); // falls back to class fee, unbilled
+    expect(row?.status).toBe("UNPAID");
+  });
 });
