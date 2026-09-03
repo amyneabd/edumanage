@@ -58,6 +58,10 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
     if (pupilId) setPeriod(currentPeriod());
   }, [pupilId]);
 
+  useEffect(() => {
+    if (!pupilId) setLedgerPupilId(null);
+  }, [pupilId]);
+
   const detailQuery = useQuery({
     queryKey: ["teacher", "pupil-detail", pupilId],
     queryFn: () => fetchPupilDetail(pupilId!),
