@@ -21,11 +21,14 @@ import {
   createClass,
   declineParentRequest,
   declineVisitRequest,
+  endVacation,
   fetchAllParentRequests,
   fetchClasses,
+  fetchCurrentVacation,
   fetchPupilRequests,
   fetchVisitRequests,
   rejectPupilRequest,
+  startVacation as startVacationApi,
 } from "../../api/teacher";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
@@ -213,6 +216,114 @@ function ParentRequestRow({
   );
 }
 
+export function VacationBanner() {
+  const queryClient = useQueryClient();
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  const vacationQuery = useQuery({ queryKey: ["teacher", "vacation"], queryFn: fetchCurrentVacation });
+
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ["teacher", "vacation"] });
+    queryClient.invalidateQueries({ queryKey: ["teacher", "overview"] });
+  };
+
+  const startMutation = useMutation({
+    mutationFn: () => startVacationApi(startDate, endDate),
+    onSuccess: () => {
+      toast.success("Vacation mode started.");
+      setPickerOpen(false);
+      setStartDate("");
+      setEndDate("");
+      invalidate();
+    },
+  });
+
+  const endMutation = useMutation({
+    mutationFn: () => endVacation(),
+    onSuccess: () => {
+      toast.success("Vacation mode ended. Weekly schedules have resumed.");
+      invalidate();
+    },
+  });
+
+  if (vacationQuery.isLoading) return null;
+  const period = vacationQuery.data;
+
+  return (
+    <Card className="mb-6 p-5">
+      {period ? (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-medium text-ink-700">Vacation mode is active</h2>
+            <p className="mt-1 text-xs text-ink-500">
+              {new Date(period.startDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })} –{" "}
+              {new Date(period.endDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+            </p>
+          </div>
+          <Button size="sm" variant="secondary" onClick={() => endMutation.mutate()} disabled={endMutation.isPending}>
+            {endMutation.isPending ? "Ending…" : "End vacation mode"}
+          </Button>
+        </div>
+      ) : pickerOpen ? (
+        <form
+          className="flex flex-wrap items-end gap-3"
+          onSubmit={(e) => {
+            e.preventDefault();
+            startMutation.mutate();
+          }}
+        >
+          <div>
+            <label htmlFor="vacation-start" className="text-xs font-medium text-ink-700">
+              Start date
+            </label>
+            <input
+              id="vacation-start"
+              type="date"
+              required
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              className="focus-ring mt-1 rounded-sm border border-border-strong bg-surface px-2 py-1.5 text-xs text-ink-700"
+            />
+          </div>
+          <div>
+            <label htmlFor="vacation-end" className="text-xs font-medium text-ink-700">
+              End date
+            </label>
+            <input
+              id="vacation-end"
+              type="date"
+              required
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              className="focus-ring mt-1 rounded-sm border border-border-strong bg-surface px-2 py-1.5 text-xs text-ink-700"
+            />
+          </div>
+          <Button size="sm" type="submit" disabled={startMutation.isPending}>
+            {startMutation.isPending ? "Starting…" : "Start"}
+          </Button>
+          <Button size="sm" variant="secondary" type="button" onClick={() => setPickerOpen(false)}>
+            Cancel
+          </Button>
+        </form>
+      ) : (
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-sm font-medium text-ink-700">Vacation mode</h2>
+            <p className="mt-1 text-xs text-ink-500">
+              Suspend the weekly schedule for a date range and pick one-off sessions per class instead.
+            </p>
+          </div>
+          <Button size="sm" variant="secondary" onClick={() => setPickerOpen(true)}>
+            Start vacation mode
+          </Button>
+        </div>
+      )}
+    </Card>
+  );
+}
+
 export function ClassesPage() {
   const queryClient = useQueryClient();
   const [modalOpen, setModalOpen] = useState(false);
@@ -331,6 +442,8 @@ export function ClassesPage() {
             New class
           </Button>
         </div>
+
+        <VacationBanner />
 
         <section className="mt-6">
           <h2 className="text-sm font-medium text-ink-700">Pending requests</h2>
