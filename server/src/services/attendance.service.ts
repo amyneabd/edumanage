@@ -46,17 +46,36 @@ function parseDateKey(key: string): Date {
   return new Date(y!, m! - 1, d!);
 }
 
-export async function getAttendanceCalendar(teacherId: string, pupilId: string, period?: string) {
-  const pupil = await getOwnedPupil(teacherId, pupilId);
-  const targetPeriod = period ?? currentPeriod();
+type AttendanceCalendarDay = {
+  date: string;
+  dayOfWeek: number;
+  startTime: string;
+  endTime: string;
+  display: "FUTURE" | "TODAY" | "PRESENT" | "ABSENT" | "UNMARKED";
+  record: "PRESENT" | "ABSENT" | null;
+};
+
+/**
+ * Builds the calendar days for a pupil/class/period.
+ *
+ * The class's *current* weekly schedule only restricts which days are
+ * markable/visible for the *current* period. Past periods reflect
+ * whatever the schedule was at the time, which we don't track
+ * historically — so for any non-current period every day of the month is
+ * included (attendance can be recorded on any date), and only vacation
+ * sessions or the current schedule narrow things down for the live month.
+ */
+async function buildAttendanceDays(
+  classId: string,
+  scheduleSlots: { dayOfWeek: number; startTime: string; endTime: string }[],
+  pupilId: string,
+  targetPeriod: string,
+): Promise<AttendanceCalendarDay[]> {
   const [year, month] = targetPeriod.split("-").map(Number);
+  const isCurrentPeriod = targetPeriod === currentPeriod();
 
-  if (!pupil.classId || !pupil.class) {
-    return { period: targetPeriod, className: null, classType: null, days: [] };
-  }
-
-  const scheduledDays = new Set(pupil.class.scheduleSlots.map((s) => s.dayOfWeek));
-  const slotByDay = new Map(pupil.class.scheduleSlots.map((s) => [s.dayOfWeek, s]));
+  const scheduledDays = new Set(scheduleSlots.map((s) => s.dayOfWeek));
+  const slotByDay = new Map(scheduleSlots.map((s) => [s.dayOfWeek, s]));
 
   const today = new Date();
   const todayKey = toDateKey(today);
@@ -66,34 +85,27 @@ export async function getAttendanceCalendar(teacherId: string, pupilId: string, 
   const monthEnd = new Date(year!, month!, 0, 23, 59, 59, 999);
 
   const vacationSessions = await prisma.vacationSession.findMany({
-    where: { classId: pupil.classId, date: { gte: monthStart, lte: monthEnd } },
+    where: { classId, date: { gte: monthStart, lte: monthEnd } },
   });
   const vacationByKey = new Map(vacationSessions.map((v) => [toDateKey(v.date), v]));
 
-  const records =
-    scheduledDays.size > 0 || vacationByKey.size > 0
-      ? await prisma.attendanceRecord.findMany({
-          where: { pupilId, classId: pupil.classId, date: { gte: monthStart, lte: monthEnd } },
-        })
-      : [];
+  const shouldFetchRecords = !isCurrentPeriod || scheduledDays.size > 0 || vacationByKey.size > 0;
+  const records = shouldFetchRecords
+    ? await prisma.attendanceRecord.findMany({
+        where: { pupilId, classId, date: { gte: monthStart, lte: monthEnd } },
+      })
+    : [];
   const recordByKey = new Map(records.map((r) => [toDateKey(r.date), r.status]));
 
-  const days: {
-    date: string;
-    dayOfWeek: number;
-    startTime: string;
-    endTime: string;
-    display: "FUTURE" | "TODAY" | "PRESENT" | "ABSENT" | "UNMARKED";
-    record: "PRESENT" | "ABSENT" | null;
-  }[] = [];
+  const days: AttendanceCalendarDay[] = [];
 
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year!, month! - 1, day);
     const dayOfWeek = date.getDay();
     const key = toDateKey(date);
     const vacationSlot = vacationByKey.get(key);
-    if (!vacationSlot && !scheduledDays.has(dayOfWeek)) continue;
-    const slot = vacationSlot ?? slotByDay.get(dayOfWeek)!;
+    if (isCurrentPeriod && !vacationSlot && !scheduledDays.has(dayOfWeek)) continue;
+    const slot = vacationSlot ?? slotByDay.get(dayOfWeek) ?? { startTime: "", endTime: "" };
     const record = recordByKey.get(key) ?? null;
 
     let display: "FUTURE" | "TODAY" | "PRESENT" | "ABSENT" | "UNMARKED";
@@ -107,6 +119,19 @@ export async function getAttendanceCalendar(teacherId: string, pupilId: string, 
 
     days.push({ date: key, dayOfWeek, startTime: slot.startTime, endTime: slot.endTime, display, record });
   }
+
+  return days;
+}
+
+export async function getAttendanceCalendar(teacherId: string, pupilId: string, period?: string) {
+  const pupil = await getOwnedPupil(teacherId, pupilId);
+  const targetPeriod = period ?? currentPeriod();
+
+  if (!pupil.classId || !pupil.class) {
+    return { period: targetPeriod, className: null, classType: null, days: [] };
+  }
+
+  const days = await buildAttendanceDays(pupil.classId, pupil.class.scheduleSlots, pupilId, targetPeriod);
 
   return {
     period: targetPeriod,
@@ -124,64 +149,12 @@ export async function getOwnAttendanceCalendar(pupilId: string, period?: string)
   if (!pupil) throw new AttendanceError("Pupil profile not found.", 404);
 
   const targetPeriod = period ?? currentPeriod();
-  const [year, month] = targetPeriod.split("-").map(Number);
 
   if (!pupil.classId || !pupil.class) {
     return { period: targetPeriod, className: null, classType: null, days: [] };
   }
 
-  const scheduledDays = new Set(pupil.class.scheduleSlots.map((s) => s.dayOfWeek));
-  const slotByDay = new Map(pupil.class.scheduleSlots.map((s) => [s.dayOfWeek, s]));
-
-  const today = new Date();
-  const todayKey = toDateKey(today);
-
-  const daysInMonth = new Date(year!, month!, 0).getDate();
-  const monthStart = new Date(year!, month! - 1, 1);
-  const monthEnd = new Date(year!, month!, 0, 23, 59, 59, 999);
-
-  const vacationSessions = await prisma.vacationSession.findMany({
-    where: { classId: pupil.classId, date: { gte: monthStart, lte: monthEnd } },
-  });
-  const vacationByKey = new Map(vacationSessions.map((v) => [toDateKey(v.date), v]));
-
-  const records =
-    scheduledDays.size > 0 || vacationByKey.size > 0
-      ? await prisma.attendanceRecord.findMany({
-          where: { pupilId, classId: pupil.classId, date: { gte: monthStart, lte: monthEnd } },
-        })
-      : [];
-  const recordByKey = new Map(records.map((r) => [toDateKey(r.date), r.status]));
-
-  const days: {
-    date: string;
-    dayOfWeek: number;
-    startTime: string;
-    endTime: string;
-    display: "FUTURE" | "TODAY" | "PRESENT" | "ABSENT" | "UNMARKED";
-    record: "PRESENT" | "ABSENT" | null;
-  }[] = [];
-
-  for (let day = 1; day <= daysInMonth; day++) {
-    const date = new Date(year!, month! - 1, day);
-    const dayOfWeek = date.getDay();
-    const key = toDateKey(date);
-    const vacationSlot = vacationByKey.get(key);
-    if (!vacationSlot && !scheduledDays.has(dayOfWeek)) continue;
-    const slot = vacationSlot ?? slotByDay.get(dayOfWeek)!;
-    const record = recordByKey.get(key) ?? null;
-
-    let display: "FUTURE" | "TODAY" | "PRESENT" | "ABSENT" | "UNMARKED";
-    if (key === todayKey) {
-      display = "TODAY";
-    } else if (date > today) {
-      display = "FUTURE";
-    } else {
-      display = record === "PRESENT" ? "PRESENT" : record === "ABSENT" ? "ABSENT" : "UNMARKED";
-    }
-
-    days.push({ date: key, dayOfWeek, startTime: slot.startTime, endTime: slot.endTime, display, record });
-  }
+  const days = await buildAttendanceDays(pupil.classId, pupil.class.scheduleSlots, pupilId, targetPeriod);
 
   return {
     period: targetPeriod,
@@ -226,11 +199,14 @@ export async function markAttendance(teacherId: string, pupilId: string, dateKey
   today.setHours(23, 59, 59, 999);
   if (date > today) throw new AttendanceError("Cannot record attendance for a future date.", 400);
 
-  const vacationSession = await getVacationSessionForDate(pupil.classId, date);
-  if (!vacationSession) {
-    const scheduledDays = new Set(pupil.class.scheduleSlots.map((s) => s.dayOfWeek));
-    if (!scheduledDays.has(date.getDay())) {
-      throw new AttendanceError("This pupil's class has no session scheduled on that day.", 400);
+  const isCurrentPeriod = dateKey.slice(0, 7) === currentPeriod();
+  if (isCurrentPeriod) {
+    const vacationSession = await getVacationSessionForDate(pupil.classId, date);
+    if (!vacationSession) {
+      const scheduledDays = new Set(pupil.class.scheduleSlots.map((s) => s.dayOfWeek));
+      if (!scheduledDays.has(date.getDay())) {
+        throw new AttendanceError("This pupil's class has no session scheduled on that day.", 400);
+      }
     }
   }
 

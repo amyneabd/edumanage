@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../utils/prisma.js";
 import { hashPassword } from "../utils/password.js";
-import { getAttendanceCalendar, markAttendance } from "./attendance.service.js";
+import { getAttendanceCalendar, getOwnAttendanceCalendar, markAttendance } from "./attendance.service.js";
 import { addVacationSession, startVacation } from "./vacation.service.js";
 
 const TEST_EMAIL = `test-attendance-vacation-${Date.now()}@example.com`;
@@ -28,6 +28,24 @@ function unscheduledWeekdayOffset(scheduledDay: number): number {
     if (candidate.getDay() !== scheduledDay) return offset;
   }
   throw new Error("unreachable");
+}
+
+// A day, `monthsBack` calendar months from now, that doesn't fall on the
+// class's current weekly `scheduledDay`. Used to prove that the *current*
+// schedule shouldn't rewrite what's visible/markable in other periods.
+function unscheduledDateInMonth(monthsBack: number, scheduledDay: number): Date {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = now.getMonth() - monthsBack;
+  for (let day = 10; day <= 20; day++) {
+    const d = new Date(year, month, day);
+    if (d.getDay() !== scheduledDay) return d;
+  }
+  throw new Error("unreachable");
+}
+
+function periodKey(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
 }
 
 beforeAll(async () => {
@@ -104,5 +122,44 @@ describe("markAttendance with an active vacation period", () => {
   it("still rejects an unscheduled day with no vacation session", async () => {
     const noSessionDate = daysFromNow(unscheduledWeekdayOffset(1));
     await expect(markAttendance(teacherId, pupilId, dateKey(noSessionDate), "PRESENT")).rejects.toThrow();
+  });
+});
+
+describe("getAttendanceCalendar schedule restriction is period-relative", () => {
+  it("includes a day in a past period even though it doesn't match the current weekly schedule", async () => {
+    const targetDate = unscheduledDateInMonth(2, 1);
+    const calendar = await getAttendanceCalendar(teacherId, pupilId, periodKey(targetDate));
+    const day = calendar.days.find((d) => d.date === dateKey(targetDate));
+    expect(day).toBeDefined();
+    expect(day?.record).toBeNull();
+  });
+
+  it("still restricts the current period to days matching the current schedule", async () => {
+    const targetDate = unscheduledDateInMonth(0, 1);
+    const calendar = await getAttendanceCalendar(teacherId, pupilId, periodKey(targetDate));
+    const day = calendar.days.find((d) => d.date === dateKey(targetDate));
+    expect(day).toBeUndefined();
+  });
+});
+
+describe("getOwnAttendanceCalendar schedule restriction is period-relative", () => {
+  it("includes a day in a past period even though it doesn't match the current weekly schedule", async () => {
+    const targetDate = unscheduledDateInMonth(3, 1);
+    const calendar = await getOwnAttendanceCalendar(pupilId, periodKey(targetDate));
+    const day = calendar.days.find((d) => d.date === dateKey(targetDate));
+    expect(day).toBeDefined();
+  });
+});
+
+describe("markAttendance schedule restriction is period-relative", () => {
+  it("allows marking a day in a past period that doesn't match the current weekly schedule", async () => {
+    const targetDate = unscheduledDateInMonth(2, 1);
+    const record = await markAttendance(teacherId, pupilId, dateKey(targetDate), "PRESENT");
+    expect(record.status).toBe("PRESENT");
+  });
+
+  it("still rejects an unscheduled day with no vacation session in the current period", async () => {
+    const targetDate = unscheduledDateInMonth(0, 1);
+    await expect(markAttendance(teacherId, pupilId, dateKey(targetDate), "PRESENT")).rejects.toThrow();
   });
 });
