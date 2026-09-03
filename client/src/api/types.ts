@@ -221,6 +221,7 @@ export interface PupilLedgerRow {
 export interface PupilLedger {
   balance: number;
   rows: PupilLedgerRow[];
+  sessionsInAdvance: number;
 }
 
 export interface PostSubmissionEntry {

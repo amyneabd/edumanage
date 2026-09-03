@@ -32,6 +32,8 @@ beforeAll(async () => {
     data: { teacherId, name: "Pupil Ledger Class", type: "MATH", monthlyFee: 100 },
   });
   classId = klass.id;
+  // One weekly session (Monday) — used to compute per-session rates.
+  await prisma.scheduleSlot.create({ data: { classId, dayOfWeek: 1, startTime: "09:00", endTime: "10:00" } });
 
   const pupil = await prisma.user.create({
     data: {
@@ -124,5 +126,35 @@ describe("getPupilLedger", () => {
     expect(row?.present).toBe(1);
     expect(row?.amountDue).toBe(100); // falls back to class fee, unbilled
     expect(row?.status).toBe("UNPAID");
+  });
+
+  it("computes sessionsInAdvance from credit and the current schedule's session count", async () => {
+    const period = previousPeriod(currentPeriod());
+    await setPaymentStatus(teacherId, pupilId, { period, status: "PAID", amountDue: 100, amountPaid: 150 });
+    await setPaymentStatus(teacherId, pupilId, { period: currentPeriod(), status: "PAID", amountDue: 100, amountPaid: 200 });
+
+    const ledger = await getPupilLedger(teacherId, pupilId);
+    // previous: 100-150=-50; current: 100-200=-100 => balance = -150 (credit).
+    // The class meets every Monday (see beforeAll); per-session rate = 100 /
+    // (Mondays this month).
+    expect(ledger.balance).toBe(-150);
+    const [y, m] = currentPeriod().split("-").map(Number);
+    const daysInMonth = new Date(y!, m!, 0).getDate();
+    let mondaysThisMonth = 0;
+    for (let day = 1; day <= daysInMonth; day++) {
+      if (new Date(y!, m! - 1, day).getDay() === 1) mondaysThisMonth++;
+    }
+    const perSessionRate = 100 / mondaysThisMonth;
+    const expectedSessions = Math.round(150 / perSessionRate);
+
+    expect(ledger.sessionsInAdvance).toBe(expectedSessions);
+  });
+
+  it("reports zero sessionsInAdvance when the pupil owes money instead of having credit", async () => {
+    const period = previousPeriod(currentPeriod());
+    await setPaymentStatus(teacherId, pupilId, { period, status: "UNPAID", amountDue: 100, amountPaid: 0 });
+
+    const ledger = await getPupilLedger(teacherId, pupilId);
+    expect(ledger.sessionsInAdvance).toBe(0);
   });
 });

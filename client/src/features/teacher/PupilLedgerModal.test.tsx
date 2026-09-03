@@ -27,6 +27,7 @@ function renderWithClient(ui: ReactElement) {
 
 const ledger: PupilLedger = {
   balance: 50,
+  sessionsInAdvance: 0,
   rows: [
     { period: "2026-09", status: "UNPAID", amountDue: 100, amountPaid: 0, dueDate: null, present: 3, absent: 1 },
     { period: "2026-08", status: "PAID", amountDue: 100, amountPaid: 150, dueDate: "2026-08-05T00:00:00.000Z", present: 4, absent: 0 },
@@ -56,9 +57,9 @@ describe("PupilLedgerModal", () => {
   });
 
   it("shows a credit message when the pupil has paid in advance", async () => {
-    fetchPupilLedgerMock.mockResolvedValue({ ...ledger, balance: -25 });
+    fetchPupilLedgerMock.mockResolvedValue({ ...ledger, balance: -25, sessionsInAdvance: 3 });
     renderWithClient(<PupilLedgerModal pupilId="p1" pupilName="Ada" onClose={() => {}} />);
-    expect(await screen.findByText(/\$25 credit \(paid in advance\)/i)).toBeInTheDocument();
+    expect(await screen.findByText(/\$25 credit \(paid in advance\) — about 3 sessions ahead/i)).toBeInTheDocument();
   });
 
   it("commits an edited amount-paid value for the correct period on blur", async () => {

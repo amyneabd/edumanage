@@ -49,6 +49,7 @@ export function PupilLedgerModal({
 
   const ledger = ledgerQuery.data;
   const balance = ledger?.balance ?? 0;
+  const sessionsInAdvance = ledger?.sessionsInAdvance ?? 0;
 
   return (
     <Modal
@@ -74,7 +75,10 @@ export function PupilLedgerModal({
             {balance > 0
               ? `Owes ${formatCurrency(balance)} overall`
               : balance < 0
-                ? `${formatCurrency(Math.abs(balance))} credit (paid in advance)`
+                ? `${formatCurrency(Math.abs(balance))} credit (paid in advance)` +
+                  (sessionsInAdvance > 0
+                    ? ` — about ${sessionsInAdvance} session${sessionsInAdvance === 1 ? "" : "s"} ahead`
+                    : "")
                 : "All settled"}
           </div>
 

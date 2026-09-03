@@ -180,8 +180,22 @@ export async function setPaymentStatus(
   });
 }
 
+/** Number of calendar days in `year`-`month` (1-indexed) that fall on one of `scheduleDays`. */
+function countSessionsInMonth(scheduleDays: Set<number>, year: number, month: number): number {
+  if (scheduleDays.size === 0) return 0;
+  const daysInMonth = new Date(year, month, 0).getDate();
+  let count = 0;
+  for (let day = 1; day <= daysInMonth; day++) {
+    if (scheduleDays.has(new Date(year, month - 1, day).getDay())) count++;
+  }
+  return count;
+}
+
 export async function getPupilLedger(teacherId: string, pupilId: string) {
-  const pupil = await prisma.pupilProfile.findFirst({ where: { userId: pupilId, teacherId }, include: { class: true } });
+  const pupil = await prisma.pupilProfile.findFirst({
+    where: { userId: pupilId, teacherId },
+    include: { class: { include: { scheduleSlots: true } } },
+  });
   if (!pupil) throw new PaymentError("Pupil not found.", 404);
 
   const [payments, attendanceRecords] = await Promise.all([
@@ -225,7 +239,21 @@ export async function getPupilLedger(teacherId: string, pupilId: string) {
     };
   });
 
-  return { balance, rows };
+  // Credit is only meaningful in terms of "sessions" if we know the class's
+  // current weekly schedule and monthly fee. Uses the current month's
+  // session count as the basis, since we don't track historical schedules.
+  let sessionsInAdvance = 0;
+  if (balance < 0 && pupil.class?.monthlyFee) {
+    const scheduleDays = new Set(pupil.class.scheduleSlots.map((s) => s.dayOfWeek));
+    const now = new Date();
+    const sessionsThisMonth = countSessionsInMonth(scheduleDays, now.getFullYear(), now.getMonth() + 1);
+    if (sessionsThisMonth > 0) {
+      const perSessionRate = pupil.class.monthlyFee / sessionsThisMonth;
+      sessionsInAdvance = Math.round(Math.abs(balance) / perSessionRate);
+    }
+  }
+
+  return { balance, rows, sessionsInAdvance };
 }
 
 export async function getPaymentSummary(teacherId: string) {
