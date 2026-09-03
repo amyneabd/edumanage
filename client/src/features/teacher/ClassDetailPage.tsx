@@ -68,15 +68,27 @@ export function VacationSessionsPanel({ classId }: { classId: string }) {
       <h2 className="text-sm font-medium text-ink-700">Vacation sessions</h2>
       <p className="mt-1 text-xs text-ink-400">
         One-off sessions for this class between{" "}
-        {new Date(period.startDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })} and{" "}
-        {new Date(period.endDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}.
+        {new Date(`${period.startDate.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        })}{" "}
+        and{" "}
+        {new Date(`${period.endDate.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, {
+          month: "short",
+          day: "numeric",
+        })}
+        .
       </p>
 
       <div className="mt-3 space-y-2">
         {sessions.map((s) => (
           <div key={s.id} className="flex items-center gap-2">
             <span className="w-28 text-xs text-ink-700">
-              {new Date(s.date).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+              {new Date(`${s.date.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, {
+                weekday: "short",
+                month: "short",
+                day: "numeric",
+              })}
             </span>
             <span className="text-xs text-ink-700">
               {s.startTime}–{s.endTime}

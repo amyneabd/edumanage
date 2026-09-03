@@ -37,12 +37,15 @@ export function UpcomingSchedule({ schedule }: { schedule: ScheduleEntry[] }) {
   const today = now.getDay();
 
   const upcoming: RankedEntry[] = schedule
-    .map((entry) => {
+    .map((entry): RankedEntry | null => {
       if (entry.date) {
         const entryDate = new Date(`${entry.date}T00:00:00`);
         const todayMidnight = new Date();
         todayMidnight.setHours(0, 0, 0, 0);
         const offsetDays = Math.round((entryDate.getTime() - todayMidnight.getTime()) / 86_400_000);
+        if (offsetDays === 0 && minutesSinceMidnight(entry.endTime) <= nowMinutes) {
+          return null;
+        }
         const sortKey = offsetDays * 1440 + minutesSinceMidnight(entry.startTime);
         return { ...entry, sortKey, label: vacationDayLabel(entry.date) };
       }
@@ -55,6 +58,7 @@ export function UpcomingSchedule({ schedule }: { schedule: ScheduleEntry[] }) {
       const sortKey = offsetDays * 1440 + minutesSinceMidnight(entry.startTime);
       return { ...entry, sortKey, label: weeklyDayLabel(offsetDays, dayOfWeek) };
     })
+    .filter((e): e is RankedEntry => e !== null)
     .sort((a, b) => a.sortKey - b.sortKey)
     .slice(0, 5);
 

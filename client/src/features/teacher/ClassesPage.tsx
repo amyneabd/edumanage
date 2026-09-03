@@ -258,8 +258,15 @@ export function VacationBanner() {
           <div>
             <h2 className="text-sm font-medium text-ink-700">Vacation mode is active</h2>
             <p className="mt-1 text-xs text-ink-500">
-              {new Date(period.startDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })} –{" "}
-              {new Date(period.endDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}
+              {new Date(`${period.startDate.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+              })}{" "}
+              –{" "}
+              {new Date(`${period.endDate.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, {
+                month: "short",
+                day: "numeric",
+              })}
             </p>
           </div>
           <Button size="sm" variant="secondary" onClick={() => endMutation.mutate()} disabled={endMutation.isPending}>
