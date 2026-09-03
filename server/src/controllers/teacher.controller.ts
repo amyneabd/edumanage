@@ -43,6 +43,7 @@ import {
   listParentRequestsForClass,
   respondToParentLink,
 } from "../services/parent.service.js";
+import { getActiveVacationPeriod, getVacationScheduleEntries } from "../services/vacation.service.js";
 
 function handleServiceError(err: unknown, res: Response) {
   if (
@@ -77,16 +78,19 @@ export async function overview(req: Request, res: Response) {
     pupilCount: c._count.pupils,
   }));
 
-  const schedule = classes.flatMap((c) =>
-    c.scheduleSlots.map((s) => ({
-      classId: c.id,
-      className: c.name,
-      classType: c.type,
-      dayOfWeek: s.dayOfWeek,
-      startTime: s.startTime,
-      endTime: s.endTime,
-    }))
-  );
+  const activeVacation = await getActiveVacationPeriod(teacherId);
+  const schedule = activeVacation
+    ? await getVacationScheduleEntries(teacherId)
+    : classes.flatMap((c) =>
+        c.scheduleSlots.map((s) => ({
+          classId: c.id,
+          className: c.name,
+          classType: c.type,
+          dayOfWeek: s.dayOfWeek,
+          startTime: s.startTime,
+          endTime: s.endTime,
+        }))
+      );
 
   const paymentSummary = await getPaymentSummary(teacherId);
   const pendingRequests = await prisma.pupilProfile.count({
