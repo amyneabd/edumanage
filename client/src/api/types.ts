@@ -35,6 +35,30 @@ export interface ScheduleSlot {
   endTime: string;
 }
 
+export type VacationStatus = "ACTIVE" | "ENDED";
+
+export interface VacationPeriod {
+  id: string;
+  teacherId: string;
+  startDate: string;
+  endDate: string;
+  status: VacationStatus;
+  createdAt: string;
+}
+
+export interface VacationSessionEntry {
+  id: string;
+  vacationPeriodId: string;
+  classId: string;
+  date: string;
+  startTime: string;
+  endTime: string;
+}
+
+export type ScheduleViewResponse =
+  | { mode: "weekly"; slots: ScheduleSlot[] }
+  | { mode: "vacation"; sessions: { date: string; startTime: string; endTime: string }[] };
+
 export interface PupilSummary {
   userId: string;
   requestedType: ClassType;
@@ -112,9 +136,10 @@ export interface ScheduleEntry {
   classId: string;
   className: string;
   classType: ClassType;
-  dayOfWeek: number;
   startTime: string;
   endTime: string;
+  dayOfWeek?: number;
+  date?: string;
 }
 
 export interface OverviewData {

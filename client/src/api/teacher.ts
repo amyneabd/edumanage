@@ -19,6 +19,8 @@ import type {
   ScheduleSlot,
   TeacherParentRequest,
   TeacherVisitRequest,
+  VacationPeriod,
+  VacationSessionEntry,
   VisitRequestStatus,
 } from "./types";
 
@@ -246,4 +248,36 @@ export async function toggleGoal(id: string): Promise<Goal> {
 
 export async function deleteGoal(id: string) {
   await api.delete(`/teacher/goals/${id}`);
+}
+
+export async function fetchCurrentVacation(): Promise<VacationPeriod | null> {
+  const { data } = await api.get("/teacher/vacation/current");
+  return data;
+}
+
+export async function startVacation(startDate: string, endDate: string): Promise<VacationPeriod> {
+  const { data } = await api.post("/teacher/vacation/start", { startDate, endDate });
+  return data;
+}
+
+export async function endVacation(): Promise<VacationPeriod> {
+  const { data } = await api.post("/teacher/vacation/end");
+  return data;
+}
+
+export async function fetchVacationSessions(classId: string): Promise<VacationSessionEntry[]> {
+  const { data } = await api.get(`/teacher/classes/${classId}/vacation-sessions`);
+  return data;
+}
+
+export async function addVacationSession(
+  classId: string,
+  input: { date: string; startTime: string; endTime: string }
+): Promise<VacationSessionEntry> {
+  const { data } = await api.post(`/teacher/classes/${classId}/vacation-sessions`, input);
+  return data;
+}
+
+export async function removeVacationSession(classId: string, sessionId: string) {
+  await api.delete(`/teacher/classes/${classId}/vacation-sessions/${sessionId}`);
 }
