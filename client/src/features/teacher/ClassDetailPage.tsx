@@ -230,7 +230,6 @@ export function ClassDetailPage() {
         <label className="flex items-center gap-1.5 text-sm text-ink-500">
           Monthly fee
           <span className="flex items-center rounded-sm border border-border-strong px-2 py-1 focus-within:ring-2 focus-within:ring-accent-600 focus-within:ring-offset-2 focus-within:ring-offset-surface">
-            <span className="text-ink-400">$</span>
             <input
               type="number"
               min={0}
@@ -243,6 +242,7 @@ export function ClassDetailPage() {
               }}
               className="w-16 border-none p-0 text-sm text-ink-900 focus:outline-none focus:ring-0"
             />
+            <span className="text-ink-400">TND</span>
           </span>
         </label>
       </div>

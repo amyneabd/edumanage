@@ -136,7 +136,7 @@ function ClassCard({
           </div>
           <div className="mt-3 flex items-center justify-between">
             <p className="text-sm text-ink-500">{pupilCount} pupil{pupilCount === 1 ? "" : "s"}</p>
-            {monthlyFee != null && <p className="text-sm font-medium text-ink-700">${monthlyFee}/mo</p>}
+            {monthlyFee != null && <p className="text-sm font-medium text-ink-700">{monthlyFee} TND/mo</p>}
           </div>
         </Card>
       </Link>
