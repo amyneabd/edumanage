@@ -1,6 +1,7 @@
 import { prisma } from "../utils/prisma.js";
 import { currentPeriod } from "../utils/period.js";
 import { notifyParentsOfPupil } from "./notification.service.js";
+import { getVacationSessionForDate } from "./vacation.service.js";
 
 export class AttendanceError extends Error {
   constructor(message: string, public status = 400) {
@@ -64,8 +65,13 @@ export async function getAttendanceCalendar(teacherId: string, pupilId: string, 
   const monthStart = new Date(year!, month! - 1, 1);
   const monthEnd = new Date(year!, month!, 0, 23, 59, 59, 999);
 
+  const vacationSessions = await prisma.vacationSession.findMany({
+    where: { classId: pupil.classId, date: { gte: monthStart, lte: monthEnd } },
+  });
+  const vacationByKey = new Map(vacationSessions.map((v) => [toDateKey(v.date), v]));
+
   const records =
-    scheduledDays.size > 0
+    scheduledDays.size > 0 || vacationByKey.size > 0
       ? await prisma.attendanceRecord.findMany({
           where: { pupilId, classId: pupil.classId, date: { gte: monthStart, lte: monthEnd } },
         })
@@ -84,9 +90,10 @@ export async function getAttendanceCalendar(teacherId: string, pupilId: string, 
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year!, month! - 1, day);
     const dayOfWeek = date.getDay();
-    if (!scheduledDays.has(dayOfWeek)) continue;
-    const slot = slotByDay.get(dayOfWeek)!;
     const key = toDateKey(date);
+    const vacationSlot = vacationByKey.get(key);
+    if (!vacationSlot && !scheduledDays.has(dayOfWeek)) continue;
+    const slot = vacationSlot ?? slotByDay.get(dayOfWeek)!;
     const record = recordByKey.get(key) ?? null;
 
     let display: "FUTURE" | "TODAY" | "PRESENT" | "ABSENT" | "UNMARKED";
@@ -133,8 +140,13 @@ export async function getOwnAttendanceCalendar(pupilId: string, period?: string)
   const monthStart = new Date(year!, month! - 1, 1);
   const monthEnd = new Date(year!, month!, 0, 23, 59, 59, 999);
 
+  const vacationSessions = await prisma.vacationSession.findMany({
+    where: { classId: pupil.classId, date: { gte: monthStart, lte: monthEnd } },
+  });
+  const vacationByKey = new Map(vacationSessions.map((v) => [toDateKey(v.date), v]));
+
   const records =
-    scheduledDays.size > 0
+    scheduledDays.size > 0 || vacationByKey.size > 0
       ? await prisma.attendanceRecord.findMany({
           where: { pupilId, classId: pupil.classId, date: { gte: monthStart, lte: monthEnd } },
         })
@@ -153,9 +165,10 @@ export async function getOwnAttendanceCalendar(pupilId: string, period?: string)
   for (let day = 1; day <= daysInMonth; day++) {
     const date = new Date(year!, month! - 1, day);
     const dayOfWeek = date.getDay();
-    if (!scheduledDays.has(dayOfWeek)) continue;
-    const slot = slotByDay.get(dayOfWeek)!;
     const key = toDateKey(date);
+    const vacationSlot = vacationByKey.get(key);
+    if (!vacationSlot && !scheduledDays.has(dayOfWeek)) continue;
+    const slot = vacationSlot ?? slotByDay.get(dayOfWeek)!;
     const record = recordByKey.get(key) ?? null;
 
     let display: "FUTURE" | "TODAY" | "PRESENT" | "ABSENT" | "UNMARKED";
@@ -213,9 +226,12 @@ export async function markAttendance(teacherId: string, pupilId: string, dateKey
   today.setHours(23, 59, 59, 999);
   if (date > today) throw new AttendanceError("Cannot record attendance for a future date.", 400);
 
-  const scheduledDays = new Set(pupil.class.scheduleSlots.map((s) => s.dayOfWeek));
-  if (!scheduledDays.has(date.getDay())) {
-    throw new AttendanceError("This pupil's class has no session scheduled on that day.", 400);
+  const vacationSession = await getVacationSessionForDate(pupil.classId, date);
+  if (!vacationSession) {
+    const scheduledDays = new Set(pupil.class.scheduleSlots.map((s) => s.dayOfWeek));
+    if (!scheduledDays.has(date.getDay())) {
+      throw new AttendanceError("This pupil's class has no session scheduled on that day.", 400);
+    }
   }
 
   const record = await prisma.attendanceRecord.upsert({
