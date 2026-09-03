@@ -4,11 +4,15 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { ArrowLeft, Plus, X } from "lucide-react";
 import {
+  addVacationSession,
   approveParentRequest,
   declineParentRequest,
   deletePupilFromClass,
   fetchClassDetail,
+  fetchCurrentVacation,
   fetchParentRequests,
+  fetchVacationSessions,
+  removeVacationSession,
   updateClassFee,
   updatePaymentStatus,
   updateSchedule,
@@ -20,9 +24,110 @@ import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { EmptyState, Spinner } from "../../components/Feedback";
 import { currentPeriod, DAY_NAMES } from "../../lib/period";
 import { PupilDetailModal } from "./PupilDetailModal";
-import type { PaymentStatus, PupilSummary, ScheduleSlot } from "../../api/types";
+import type { PaymentStatus, PupilSummary, ScheduleSlot, VacationSessionEntry } from "../../api/types";
 
 const PAYMENT_STATUSES: PaymentStatus[] = ["PAID", "UNPAID", "INCOMPLETE"];
+
+export function VacationSessionsPanel({ classId }: { classId: string }) {
+  const queryClient = useQueryClient();
+  const [date, setDate] = useState("");
+  const [startTime, setStartTime] = useState("16:00");
+  const [endTime, setEndTime] = useState("17:00");
+
+  const vacationQuery = useQuery({ queryKey: ["teacher", "vacation"], queryFn: fetchCurrentVacation });
+  const sessionsQuery = useQuery({
+    queryKey: ["teacher", "classes", classId, "vacation-sessions"],
+    queryFn: () => fetchVacationSessions(classId),
+    enabled: !!vacationQuery.data,
+  });
+
+  const invalidate = () =>
+    queryClient.invalidateQueries({ queryKey: ["teacher", "classes", classId, "vacation-sessions"] });
+
+  const addMutation = useMutation({
+    mutationFn: () => addVacationSession(classId, { date, startTime, endTime }),
+    onSuccess: () => {
+      toast.success("Ad-hoc session added.");
+      setDate("");
+      invalidate();
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (sessionId: string) => removeVacationSession(classId, sessionId),
+    onSuccess: invalidate,
+  });
+
+  const period = vacationQuery.data;
+  if (!period) return null;
+
+  const sessions: VacationSessionEntry[] = sessionsQuery.data ?? [];
+
+  return (
+    <Card className="mt-6 p-5">
+      <h2 className="text-sm font-medium text-ink-700">Vacation sessions</h2>
+      <p className="mt-1 text-xs text-ink-400">
+        One-off sessions for this class between{" "}
+        {new Date(period.startDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })} and{" "}
+        {new Date(period.endDate).toLocaleDateString(undefined, { month: "short", day: "numeric" })}.
+      </p>
+
+      <div className="mt-3 space-y-2">
+        {sessions.map((s) => (
+          <div key={s.id} className="flex items-center gap-2">
+            <span className="w-28 text-xs text-ink-700">
+              {new Date(s.date).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" })}
+            </span>
+            <span className="text-xs text-ink-700">
+              {s.startTime}–{s.endTime}
+            </span>
+            <button
+              onClick={() => removeMutation.mutate(s.id)}
+              className="focus-ring ml-auto rounded-sm text-ink-400 hover:text-danger-600"
+              aria-label={`Remove vacation session on ${s.date}`}
+            >
+              <X className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+            </button>
+          </div>
+        ))}
+        {sessions.length === 0 && <p className="text-xs text-ink-400">No ad-hoc sessions added yet.</p>}
+      </div>
+
+      <form
+        className="mt-3 flex flex-wrap items-end gap-2"
+        onSubmit={(e) => {
+          e.preventDefault();
+          addMutation.mutate();
+        }}
+      >
+        <input
+          type="date"
+          required
+          min={period.startDate.slice(0, 10)}
+          max={period.endDate.slice(0, 10)}
+          value={date}
+          onChange={(e) => setDate(e.target.value)}
+          className="focus-ring rounded-sm border border-border-strong bg-surface px-2 py-1.5 text-xs text-ink-700"
+        />
+        <input
+          type="time"
+          value={startTime}
+          onChange={(e) => setStartTime(e.target.value)}
+          className="focus-ring w-24 rounded-sm border border-border-strong bg-surface px-2 py-1.5 text-xs text-ink-700"
+        />
+        <input
+          type="time"
+          value={endTime}
+          onChange={(e) => setEndTime(e.target.value)}
+          className="focus-ring w-24 rounded-sm border border-border-strong bg-surface px-2 py-1.5 text-xs text-ink-700"
+        />
+        <Button size="sm" type="submit" disabled={addMutation.isPending || !date}>
+          {addMutation.isPending ? "Adding…" : "Add session"}
+        </Button>
+      </form>
+    </Card>
+  );
+}
 
 export function ClassDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -266,6 +371,8 @@ export function ClassDetailPage() {
           </div>
         </Card>
       </div>
+
+      <VacationSessionsPanel classId={id!} />
 
       <Card className="mt-6 p-5">
         <h2 className="text-sm font-medium text-ink-700">Upcoming visitors</h2>
