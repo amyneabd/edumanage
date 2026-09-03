@@ -3,6 +3,7 @@ import { listPostsForClass, submitToExam, getOwnGrades, PostError } from "../ser
 import { AttendanceError, getOwnAttendanceCalendar } from "../services/attendance.service.js";
 import { PaymentError, getOwnPaymentHistory } from "../services/payment.service.js";
 import { PupilError, getHomeSnapshot, getPupilProfileWithClass } from "../services/pupil.service.js";
+import { getClassScheduleView } from "../services/vacation.service.js";
 import {
   VisitError,
   cancelVisitRequest,
@@ -58,7 +59,8 @@ export async function schedule(req: Request, res: Response) {
     res.status(404).json({ error: "Not yet assigned to a class." });
     return;
   }
-  res.json({ className: profile.class.name, slots: profile.class.scheduleSlots });
+  const view = await getClassScheduleView(profile.classId!, profile.class.teacher.userId);
+  res.json({ className: profile.class.name, ...view });
 }
 
 export async function posts(req: Request, res: Response) {

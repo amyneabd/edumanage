@@ -8,7 +8,7 @@ import type {
   Post,
   PupilGrades,
   PupilHome,
-  ScheduleSlot,
+  ScheduleViewResponse,
 } from "./types";
 
 export async function fetchChildren(): Promise<ParentChild[]> {
@@ -31,7 +31,7 @@ export async function fetchChildHome(pupilId: string): Promise<PupilHome> {
   return data;
 }
 
-export async function fetchChildSchedule(pupilId: string): Promise<{ className: string; slots: ScheduleSlot[] }> {
+export async function fetchChildSchedule(pupilId: string): Promise<{ className: string } & ScheduleViewResponse> {
   const { data } = await api.get(`/parent/children/${pupilId}/schedule`);
   return data;
 }

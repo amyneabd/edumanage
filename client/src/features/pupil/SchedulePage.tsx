@@ -13,6 +13,7 @@ import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
 import { ClassTypeBadge, VisitStatusBadge } from "../../components/Badge";
 import { EmptyState, ErrorState, Spinner } from "../../components/Feedback";
+import { ScheduleView } from "../../components/ScheduleView";
 import { DAY_NAMES } from "../../lib/period";
 
 function todayIso(): string {
@@ -180,62 +181,14 @@ export function PupilSchedulePage() {
 
   if (isLoading || !data) return <Spinner />;
 
-  const today = new Date().getDay();
-  const byDay = Array.from({ length: 7 }, (_, day) =>
-    data.slots.filter((s) => s.dayOfWeek === day).sort((a, b) => a.startTime.localeCompare(b.startTime))
-  );
-  const hasAny = data.slots.length > 0;
-
   return (
     <div>
       <h1 className="text-2xl font-semibold text-ink-900">Schedule</h1>
       <p className="mt-1 text-sm text-ink-500">{data.className}</p>
 
-      {!hasAny ? (
-        <Card className="mt-6 p-5">
-          <EmptyState title="No schedule set yet" description="Your teacher hasn't added session times." />
-        </Card>
-      ) : (
-        <div className="mt-6 overflow-x-auto">
-          <div className="grid min-w-[700px] grid-cols-7 gap-2">
-            {DAY_NAMES.map((name, day) => (
-              <div
-                key={name}
-                className={`rounded-sm border p-2.5 ${
-                  day === today ? "border-accent-600/40 bg-accent-50" : "border-border bg-surface"
-                }`}
-              >
-                <p
-                  className={`text-center text-xs font-semibold uppercase tracking-wide ${
-                    day === today ? "text-accent-600" : "text-ink-400"
-                  }`}
-                >
-                  {name}
-                  {day === today && <span className="ml-1 font-normal normal-case text-accent-600/60">· today</span>}
-                </p>
-                <div className="mt-2.5 space-y-1.5">
-                  {byDay[day]!.length === 0 ? (
-                    <p className="py-3 text-center text-[11px] text-ink-400">No session</p>
-                  ) : (
-                    byDay[day]!.map((s, i) => (
-                      <div
-                        key={i}
-                        className={`rounded-sm px-1.5 py-2 text-center text-[11px] font-medium leading-tight ${
-                          day === today ? "bg-accent-100 text-accent-600" : "bg-canvas text-ink-700"
-                        }`}
-                      >
-                        {s.startTime}
-                        <br />
-                        {s.endTime}
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <div className="mt-6">
+        <ScheduleView data={data} />
+      </div>
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="p-5">

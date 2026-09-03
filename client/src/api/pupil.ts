@@ -7,7 +7,7 @@ import type {
   PupilGrades,
   PupilHome,
   PupilVisitRequest,
-  ScheduleSlot,
+  ScheduleViewResponse,
 } from "./types";
 
 export async function fetchPupilHome(): Promise<PupilHome> {
@@ -15,7 +15,7 @@ export async function fetchPupilHome(): Promise<PupilHome> {
   return data;
 }
 
-export async function fetchPupilSchedule(): Promise<{ className: string; slots: ScheduleSlot[] }> {
+export async function fetchPupilSchedule(): Promise<{ className: string } & ScheduleViewResponse> {
   const { data } = await api.get("/pupil/schedule");
   return data;
 }

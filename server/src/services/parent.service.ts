@@ -4,6 +4,7 @@ import { getOwnAttendanceCalendar } from "./attendance.service.js";
 import { getOwnPaymentHistory } from "./payment.service.js";
 import { getOwnGrades, listPostsForClass } from "./post.service.js";
 import { getHomeSnapshot, getPupilProfileWithClass } from "./pupil.service.js";
+import { getClassScheduleView } from "./vacation.service.js";
 
 export class ParentError extends Error {
   constructor(message: string, public status = 400) {
@@ -101,7 +102,8 @@ export async function getChildSchedule(parentId: string, pupilId: string) {
   await assertActiveLink(parentId, pupilId);
   const profile = await getPupilProfileWithClass(pupilId);
   if (!profile?.class) throw new ParentError("Pupil is not yet assigned to a class.", 404);
-  return { className: profile.class.name, slots: profile.class.scheduleSlots };
+  const view = await getClassScheduleView(profile.classId!, profile.class.teacher.userId);
+  return { className: profile.class.name, ...view };
 }
 
 export async function getChildAttendance(parentId: string, pupilId: string, period?: string) {
