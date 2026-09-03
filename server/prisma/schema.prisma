@@ -68,6 +68,11 @@ enum ParentLinkStatus {
   REJECTED
 }
 
+enum VacationStatus {
+  ACTIVE
+  ENDED
+}
+
 model User {
   id                     String                  @id @default(cuid())
   email                  String                  @unique
@@ -109,12 +114,13 @@ model EmailVerificationToken {
 }
 
 model TeacherProfile {
-  userId        String         @id
-  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  teacherCode   String         @unique
-  classes       Class[]
-  notifications Notification[]
-  goals         Goal[]
+  userId          String            @id
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  teacherCode     String            @unique
+  classes         Class[]
+  notifications   Notification[]
+  goals           Goal[]
+  vacationPeriods VacationPeriod[]
 }
 
 model PupilProfile {
@@ -158,18 +164,19 @@ model ParentLink {
 }
 
 model Class {
-  id            String         @id @default(cuid())
-  teacherId     String
-  teacher       TeacherProfile @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
-  name          String
-  type          ClassType
-  monthlyFee    Float?
-  pupils        PupilProfile[]
-  scheduleSlots ScheduleSlot[]
-  posts         Post[]
-  attendance    AttendanceRecord[]
-  visitRequests VisitRequest[]
-  createdAt     DateTime       @default(now())
+  id               String             @id @default(cuid())
+  teacherId        String
+  teacher          TeacherProfile     @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
+  name             String
+  type             ClassType
+  monthlyFee       Float?
+  pupils           PupilProfile[]
+  scheduleSlots    ScheduleSlot[]
+  posts            Post[]
+  attendance       AttendanceRecord[]
+  visitRequests    VisitRequest[]
+  vacationSessions VacationSession[]
+  createdAt        DateTime           @default(now())
 }
 
 model ScheduleSlot {
@@ -179,6 +186,33 @@ model ScheduleSlot {
   dayOfWeek Int
   startTime String
   endTime   String
+}
+
+model VacationPeriod {
+  id        String            @id @default(cuid())
+  teacherId String
+  teacher   TeacherProfile    @relation(fields: [teacherId], references: [userId], onDelete: Cascade)
+  startDate DateTime
+  endDate   DateTime
+  status    VacationStatus    @default(ACTIVE)
+  createdAt DateTime          @default(now())
+  sessions  VacationSession[]
+
+  @@index([teacherId, status])
+}
+
+model VacationSession {
+  id               String         @id @default(cuid())
+  vacationPeriodId String
+  vacationPeriod   VacationPeriod @relation(fields: [vacationPeriodId], references: [id], onDelete: Cascade)
+  classId          String
+  class            Class          @relation(fields: [classId], references: [id], onDelete: Cascade)
+  date             DateTime
+  startTime        String
+  endTime          String
+
+  @@unique([classId, date])
+  @@index([vacationPeriodId])
 }
 
 model PaymentRecord {
