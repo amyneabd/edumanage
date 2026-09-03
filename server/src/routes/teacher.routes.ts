@@ -21,6 +21,7 @@ import {
   listPosts,
   overview,
   parentRequestsHandler,
+  pupilLedgerHandler,
   pupilPaymentHistoryHandler,
   pupilRequests,
   rejectPupilRequestHandler,
@@ -83,6 +84,7 @@ teacherRouter.get("/pupils/:pupilId/attendance", attendanceCalendarHandler);
 teacherRouter.put("/pupils/:pupilId/attendance", markAttendanceHandler);
 teacherRouter.delete("/pupils/:pupilId/attendance", clearAttendanceHandler);
 teacherRouter.get("/pupils/:pupilId/payments", pupilPaymentHistoryHandler);
+teacherRouter.get("/pupils/:pupilId/ledger", pupilLedgerHandler);
 
 teacherRouter.get("/pupil-requests", pupilRequests);
 teacherRouter.post("/pupil-requests/:pupilId/assign", assignPupilRequest);

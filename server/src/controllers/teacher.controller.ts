@@ -20,6 +20,7 @@ import {
   getLedger,
   getLedgerSummary,
   getPaymentSummary,
+  getPupilLedger,
   getPupilPaymentHistory,
   setPaymentStatus,
 } from "../services/payment.service.js";
@@ -268,6 +269,15 @@ export async function pupilPaymentHistoryHandler(req: Request, res: Response) {
   try {
     const history = await getPupilPaymentHistory(req.user!.id, req.params.pupilId as string);
     res.json(history);
+  } catch (err) {
+    if (!handleServiceError(err, res)) throw err;
+  }
+}
+
+export async function pupilLedgerHandler(req: Request, res: Response) {
+  try {
+    const ledger = await getPupilLedger(req.user!.id, req.params.pupilId as string);
+    res.json(ledger);
   } catch (err) {
     if (!handleServiceError(err, res)) throw err;
   }

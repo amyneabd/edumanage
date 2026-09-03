@@ -180,6 +180,63 @@ export async function setPaymentStatus(
   });
 }
 
+export async function getPupilLedger(teacherId: string, pupilId: string) {
+  const pupil = await prisma.pupilProfile.findFirst({ where: { userId: pupilId, teacherId }, include: { class: true } });
+  if (!pupil) throw new PaymentError("Pupil not found.", 404);
+
+  const payments = await prisma.paymentRecord.findMany({ where: { pupilId } });
+  const paymentByPeriod = new Map(payments.map((p) => [p.period, p]));
+
+  // Every billed period gets a row, plus the live period even if it hasn't
+  // been billed yet (mirrors the missing-record-defaults-to-UNPAID
+  // convention used elsewhere, e.g. getLedger/getPaymentSummary).
+  const period = currentPeriod();
+  const periods = new Set(paymentByPeriod.keys());
+  periods.add(period);
+  const sortedPeriods = Array.from(periods).sort().reverse();
+
+  const oldest = sortedPeriods[sortedPeriods.length - 1]!;
+  const newest = sortedPeriods[0]!;
+  const [oldestYear, oldestMonth] = oldest.split("-").map(Number);
+  const [newestYear, newestMonth] = newest.split("-").map(Number);
+  const rangeStart = new Date(oldestYear!, oldestMonth! - 1, 1);
+  const rangeEnd = new Date(newestYear!, newestMonth!, 0, 23, 59, 59, 999);
+
+  const attendanceRecords = await prisma.attendanceRecord.findMany({
+    where: { pupilId, date: { gte: rangeStart, lte: rangeEnd } },
+    select: { date: true, status: true },
+  });
+
+  const attendanceByPeriod = new Map<string, { present: number; absent: number }>();
+  for (const record of attendanceRecords) {
+    const key = `${record.date.getFullYear()}-${String(record.date.getMonth() + 1).padStart(2, "0")}`;
+    const entry = attendanceByPeriod.get(key) ?? { present: 0, absent: 0 };
+    if (record.status === "PRESENT") entry.present += 1;
+    else entry.absent += 1;
+    attendanceByPeriod.set(key, entry);
+  }
+
+  let balance = 0;
+  const rows = sortedPeriods.map((p) => {
+    const payment = paymentByPeriod.get(p);
+    const amountDue = payment?.amountDue ?? pupil.class?.monthlyFee ?? null;
+    const amountPaid = payment?.amountPaid ?? 0;
+    balance += (amountDue ?? 0) - amountPaid;
+    const attendance = attendanceByPeriod.get(p) ?? { present: 0, absent: 0 };
+    return {
+      period: p,
+      status: payment?.status ?? "UNPAID",
+      amountDue,
+      amountPaid,
+      dueDate: payment?.dueDate ?? null,
+      present: attendance.present,
+      absent: attendance.absent,
+    };
+  });
+
+  return { balance, rows };
+}
+
 export async function getPaymentSummary(teacherId: string) {
   const period = currentPeriod();
   const pupils = await prisma.pupilProfile.findMany({
