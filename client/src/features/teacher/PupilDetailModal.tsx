@@ -6,8 +6,10 @@ import { clearAttendance, fetchAttendanceCalendar, fetchPupilDetail, fetchPupilP
 import { Modal } from "../../components/Modal";
 import { ClassTypeBadge, PaymentBadge } from "../../components/Badge";
 import { Spinner } from "../../components/Feedback";
+import { Button } from "../../components/Button";
 import { DAY_NAMES, currentPeriod, formatPeriodLabel, shiftPeriod } from "../../lib/period";
 import { formatCurrency } from "../../lib/currency";
+import { PupilLedgerModal } from "./PupilLedgerModal";
 import type { AttendanceDay, AttendanceStatus } from "../../api/types";
 
 interface GridCell {
@@ -50,6 +52,7 @@ const DISPLAY_LABELS: Record<AttendanceDay["display"], string> = {
 export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null; onClose: () => void }) {
   const queryClient = useQueryClient();
   const [period, setPeriod] = useState(currentPeriod());
+  const [ledgerPupilId, setLedgerPupilId] = useState<string | null>(null);
 
   useEffect(() => {
     if (pupilId) setPeriod(currentPeriod());
@@ -112,6 +115,7 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
   const pupil = detailQuery.data;
 
   return (
+    <>
     <Modal open={!!pupilId} onClose={onClose} title={pupil?.name ?? "Pupil"} maxWidthClassName="max-w-lg">
       {!pupil || calendarQuery.isLoading ? (
         <Spinner />
@@ -221,7 +225,12 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
           )}
 
           <div className="mt-6 border-t border-border pt-4">
-            <h3 className="text-sm font-medium text-ink-700">Payment history</h3>
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-medium text-ink-700">Payment history</h3>
+              <Button variant="secondary" size="sm" onClick={() => setLedgerPupilId(pupilId)}>
+                Full ledger
+              </Button>
+            </div>
             {paymentsQuery.isLoading ? (
               <Spinner />
             ) : !paymentsQuery.data || paymentsQuery.data.length === 0 ? (
@@ -261,5 +270,11 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
         </div>
       )}
     </Modal>
+    <PupilLedgerModal
+      pupilId={ledgerPupilId}
+      pupilName={pupil?.name ?? null}
+      onClose={() => setLedgerPupilId(null)}
+    />
+    </>
   );
 }

@@ -15,6 +15,7 @@ import type {
   PaymentStatus,
   Post,
   PupilDetail,
+  PupilLedger,
   PupilRequest,
   ScheduleSlot,
   TeacherParentRequest,
@@ -141,6 +142,11 @@ export async function updatePaymentStatus(
 
 export async function fetchPupilPayments(pupilId: string): Promise<PaymentHistoryEntry[]> {
   const { data } = await api.get(`/teacher/pupils/${pupilId}/payments`);
+  return data;
+}
+
+export async function fetchPupilLedger(pupilId: string): Promise<PupilLedger> {
+  const { data } = await api.get(`/teacher/pupils/${pupilId}/ledger`);
   return data;
 }
 

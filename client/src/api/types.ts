@@ -208,6 +208,21 @@ export interface PaymentHistoryEntry {
   isOverdue: boolean;
 }
 
+export interface PupilLedgerRow {
+  period: string;
+  status: PaymentStatus;
+  amountDue: number | null;
+  amountPaid: number;
+  dueDate: string | null;
+  present: number;
+  absent: number;
+}
+
+export interface PupilLedger {
+  balance: number;
+  rows: PupilLedgerRow[];
+}
+
 export interface PostSubmissionEntry {
   id: string;
   pupilId: string;
