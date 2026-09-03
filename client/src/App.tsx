@@ -9,6 +9,7 @@ import {
   UserCog,
   CalendarDays,
   ClipboardCheck,
+  Receipt,
 } from "lucide-react";
 import { AppLayout } from "./components/AppLayout";
 import { Spinner } from "./components/Feedback";
@@ -75,6 +76,9 @@ const ParentAttendancePage = lazy(() =>
 const ParentPaymentsPage = lazy(() =>
   import("./features/parent/PaymentsPage").then((m) => ({ default: m.ParentPaymentsPage })),
 );
+const ParentLedgerPage = lazy(() =>
+  import("./features/parent/LedgerPage").then((m) => ({ default: m.ParentLedgerPage })),
+);
 const ParentGradesPage = lazy(() =>
   import("./features/parent/GradesPage").then((m) => ({ default: m.ParentGradesPage })),
 );
@@ -106,6 +110,7 @@ const parentNav = [
   { to: "/parent/schedule", label: "Schedule", icon: CalendarDays },
   { to: "/parent/attendance", label: "Attendance", icon: ClipboardCheck },
   { to: "/parent/payments", label: "Payments", icon: Wallet },
+  { to: "/parent/ledger", label: "Ledger", icon: Receipt },
   { to: "/parent/grades", label: "Grades", icon: GraduationCap },
   { to: "/parent/feed", label: "Class Feed", icon: MessageSquare },
 ];
@@ -165,6 +170,7 @@ export default function App() {
               <Route path="/parent/schedule" element={withSuspense(<ParentSchedulePage />)} />
               <Route path="/parent/attendance" element={withSuspense(<ParentAttendancePage />)} />
               <Route path="/parent/payments" element={withSuspense(<ParentPaymentsPage />)} />
+              <Route path="/parent/ledger" element={withSuspense(<ParentLedgerPage />)} />
               <Route path="/parent/grades" element={withSuspense(<ParentGradesPage />)} />
               <Route path="/parent/feed" element={withSuspense(<ParentFeedPage />)} />
               <Route path="/parent/settings" element={withSuspense(<SettingsPage />)} />

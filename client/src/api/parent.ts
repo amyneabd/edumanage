@@ -8,6 +8,7 @@ import type {
   Post,
   PupilGrades,
   PupilHome,
+  PupilLedger,
   ScheduleViewResponse,
 } from "./types";
 
@@ -45,6 +46,11 @@ export async function fetchChildAttendance(pupilId: string, period?: string): Pr
 
 export async function fetchChildPayments(pupilId: string): Promise<PaymentHistoryEntry[]> {
   const { data } = await api.get(`/parent/children/${pupilId}/payments`);
+  return data;
+}
+
+export async function fetchChildLedger(pupilId: string): Promise<PupilLedger> {
+  const { data } = await api.get(`/parent/children/${pupilId}/ledger`);
   return data;
 }
 

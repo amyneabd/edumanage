@@ -4,6 +4,7 @@ import {
   childAttendanceHandler,
   childGradesHandler,
   childHomeHandler,
+  childLedgerHandler,
   childPaymentsHandler,
   childPostsHandler,
   childScheduleHandler,
@@ -29,6 +30,7 @@ parentRouter.get("/children/:pupilId/home", childHomeHandler);
 parentRouter.get("/children/:pupilId/schedule", childScheduleHandler);
 parentRouter.get("/children/:pupilId/attendance", childAttendanceHandler);
 parentRouter.get("/children/:pupilId/payments", childPaymentsHandler);
+parentRouter.get("/children/:pupilId/ledger", childLedgerHandler);
 parentRouter.get("/children/:pupilId/grades", childGradesHandler);
 parentRouter.get("/children/:pupilId/posts", childPostsHandler);
 

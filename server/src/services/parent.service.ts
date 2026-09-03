@@ -1,7 +1,7 @@
 import { prisma } from "../utils/prisma.js";
 import { createNotification } from "./notification.service.js";
 import { getOwnAttendanceCalendar } from "./attendance.service.js";
-import { getOwnPaymentHistory } from "./payment.service.js";
+import { getOwnLedger, getOwnPaymentHistory } from "./payment.service.js";
 import { getOwnGrades, listPostsForClass } from "./post.service.js";
 import { getHomeSnapshot, getPupilProfileWithClass } from "./pupil.service.js";
 import { getClassScheduleView } from "./vacation.service.js";
@@ -114,6 +114,11 @@ export async function getChildAttendance(parentId: string, pupilId: string, peri
 export async function getChildPayments(parentId: string, pupilId: string) {
   await assertActiveLink(parentId, pupilId);
   return getOwnPaymentHistory(pupilId);
+}
+
+export async function getChildLedger(parentId: string, pupilId: string) {
+  await assertActiveLink(parentId, pupilId);
+  return getOwnLedger(pupilId);
 }
 
 export async function getChildGrades(parentId: string, pupilId: string) {

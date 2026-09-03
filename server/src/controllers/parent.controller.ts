@@ -4,6 +4,7 @@ import {
   getChildAttendance,
   getChildGrades,
   getChildHome,
+  getChildLedger,
   getChildPayments,
   getChildPosts,
   getChildSchedule,
@@ -92,6 +93,15 @@ export async function childPaymentsHandler(req: Request, res: Response) {
   try {
     const history = await getChildPayments(req.user!.id, req.params.pupilId as string);
     res.json(history);
+  } catch (err) {
+    if (!handleParentError(err, res)) throw err;
+  }
+}
+
+export async function childLedgerHandler(req: Request, res: Response) {
+  try {
+    const ledger = await getChildLedger(req.user!.id, req.params.pupilId as string);
+    res.json(ledger);
   } catch (err) {
     if (!handleParentError(err, res)) throw err;
   }

@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../utils/prisma.js";
 import { hashPassword } from "../utils/password.js";
 import { currentPeriod, previousPeriod } from "../utils/period.js";
-import { PaymentError, getPupilLedger, setPaymentStatus } from "./payment.service.js";
+import { PaymentError, getOwnLedger, getPupilLedger, setPaymentStatus } from "./payment.service.js";
 
 const TEST_EMAIL = `test-pupil-ledger-${Date.now()}@example.com`;
 let teacherId: string;
@@ -156,5 +156,20 @@ describe("getPupilLedger", () => {
 
     const ledger = await getPupilLedger(teacherId, pupilId);
     expect(ledger.sessionsInAdvance).toBe(0);
+  });
+});
+
+describe("getOwnLedger", () => {
+  it("throws when there's no pupil profile for this user id", async () => {
+    await expect(getOwnLedger(teacherId)).rejects.toThrow(PaymentError);
+  });
+
+  it("returns the same ledger a teacher would see, for read-only self-service views", async () => {
+    const period = previousPeriod(currentPeriod());
+    await setPaymentStatus(teacherId, pupilId, { period, status: "PAID", amountDue: 100, amountPaid: 100 });
+
+    const teacherView = await getPupilLedger(teacherId, pupilId);
+    const ownView = await getOwnLedger(pupilId);
+    expect(ownView).toEqual(teacherView);
   });
 });

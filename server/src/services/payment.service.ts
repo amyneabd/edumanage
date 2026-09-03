@@ -191,13 +191,11 @@ function countSessionsInMonth(scheduleDays: Set<number>, year: number, month: nu
   return count;
 }
 
-export async function getPupilLedger(teacherId: string, pupilId: string) {
-  const pupil = await prisma.pupilProfile.findFirst({
-    where: { userId: pupilId, teacherId },
-    include: { class: { include: { scheduleSlots: true } } },
-  });
-  if (!pupil) throw new PaymentError("Pupil not found.", 404);
+type LedgerPupil = {
+  class: { monthlyFee: number | null; scheduleSlots: { dayOfWeek: number }[] } | null;
+};
 
+async function buildPupilLedger(pupilId: string, pupil: LedgerPupil) {
   const [payments, attendanceRecords] = await Promise.all([
     prisma.paymentRecord.findMany({ where: { pupilId } }),
     prisma.attendanceRecord.findMany({ where: { pupilId }, select: { date: true, status: true } }),
@@ -254,6 +252,27 @@ export async function getPupilLedger(teacherId: string, pupilId: string) {
   }
 
   return { balance, rows, sessionsInAdvance };
+}
+
+export async function getPupilLedger(teacherId: string, pupilId: string) {
+  const pupil = await prisma.pupilProfile.findFirst({
+    where: { userId: pupilId, teacherId },
+    include: { class: { include: { scheduleSlots: true } } },
+  });
+  if (!pupil) throw new PaymentError("Pupil not found.", 404);
+
+  return buildPupilLedger(pupilId, pupil);
+}
+
+/** Same ledger, for a pupil/parent viewing their own (read-only) data — no teacher-ownership check. */
+export async function getOwnLedger(pupilId: string) {
+  const pupil = await prisma.pupilProfile.findUnique({
+    where: { userId: pupilId },
+    include: { class: { include: { scheduleSlots: true } } },
+  });
+  if (!pupil) throw new PaymentError("Pupil profile not found.", 404);
+
+  return buildPupilLedger(pupilId, pupil);
 }
 
 export async function getPaymentSummary(teacherId: string) {
