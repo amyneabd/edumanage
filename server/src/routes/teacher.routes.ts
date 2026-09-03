@@ -48,6 +48,14 @@ import {
   markAttendanceHandler,
   pupilDetailHandler,
 } from "../controllers/attendance.controller.js";
+import {
+  addVacationSessionHandler,
+  currentVacationHandler,
+  endVacationHandler,
+  listVacationSessionsHandler,
+  removeVacationSessionHandler,
+  startVacationHandler,
+} from "../controllers/vacation.controller.js";
 
 export const teacherRouter = Router();
 
@@ -62,6 +70,13 @@ teacherRouter.patch("/classes/:id/schedule", updateScheduleHandler);
 teacherRouter.patch("/classes/:id/fee", updateClassFeeHandler);
 teacherRouter.delete("/classes/:id/pupils/:pupilId", deletePupilFromClass);
 teacherRouter.get("/classes/:id/parent-requests", parentRequestsHandler);
+
+teacherRouter.get("/vacation/current", currentVacationHandler);
+teacherRouter.post("/vacation/start", startVacationHandler);
+teacherRouter.post("/vacation/end", endVacationHandler);
+teacherRouter.get("/classes/:id/vacation-sessions", listVacationSessionsHandler);
+teacherRouter.post("/classes/:id/vacation-sessions", addVacationSessionHandler);
+teacherRouter.delete("/classes/:id/vacation-sessions/:sessionId", removeVacationSessionHandler);
 
 teacherRouter.get("/pupils/:pupilId", pupilDetailHandler);
 teacherRouter.get("/pupils/:pupilId/attendance", attendanceCalendarHandler);
