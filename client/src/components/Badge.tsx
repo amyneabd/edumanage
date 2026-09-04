@@ -1,5 +1,5 @@
 import clsx from "clsx";
-import type { PaymentStatus, ClassType, UserStatus, VisitRequestStatus } from "../api/types";
+import type { PaymentStatus, ClassType, UserStatus, SwapRequestStatus } from "../api/types";
 
 const paymentColors: Record<PaymentStatus, string> = {
   PAID: "bg-success-50 text-success-700",
@@ -50,22 +50,22 @@ export function StatusBadge({ status }: { status: UserStatus }) {
   );
 }
 
-const visitStatusColors: Record<VisitRequestStatus, string> = {
+const swapStatusColors: Record<SwapRequestStatus, string> = {
   PENDING: "bg-warning-100 text-warning-700",
   APPROVED: "bg-success-50 text-success-700",
   DECLINED: "bg-danger-50 text-danger-600",
 };
 
-const visitStatusLabels: Record<VisitRequestStatus, string> = {
+const swapStatusLabels: Record<SwapRequestStatus, string> = {
   PENDING: "Pending",
   APPROVED: "Approved",
   DECLINED: "Declined",
 };
 
-export function VisitStatusBadge({ status }: { status: VisitRequestStatus }) {
+export function SwapStatusBadge({ status }: { status: SwapRequestStatus }) {
   return (
-    <span className={clsx("inline-flex rounded-sm px-2.5 py-1 text-xs font-medium", visitStatusColors[status])}>
-      {visitStatusLabels[status]}
+    <span className={clsx("inline-flex rounded-sm px-2.5 py-1 text-xs font-medium", swapStatusColors[status])}>
+      {swapStatusLabels[status]}
     </span>
   );
 }
