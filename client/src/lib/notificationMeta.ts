@@ -8,6 +8,7 @@ export const NOTIFICATION_META: Record<NotificationType, { Icon: ComponentType<{
   PAYMENT_DUE: { Icon: CreditCard, color: "bg-warning-100 text-warning-700" },
   MONTHLY_RECAP: { Icon: Trophy, color: "bg-navy/10 text-navy" },
   VISIT_REQUEST: { Icon: CalendarClock, color: "bg-accent-50 text-accent-600" },
+  SWAP_REQUEST: { Icon: CalendarClock, color: "bg-accent-50 text-accent-600" },
   PARENT_REQUEST: { Icon: Users, color: "bg-accent-50 text-accent-600" },
   POST_PUBLISHED: { Icon: BookOpen, color: "bg-accent-50 text-accent-600" },
   ABSENCE: { Icon: UserX, color: "bg-danger-100 text-danger-700" },

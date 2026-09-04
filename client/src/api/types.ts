@@ -9,6 +9,7 @@ export type NotificationType =
   | "PAYMENT_DUE"
   | "MONTHLY_RECAP"
   | "VISIT_REQUEST"
+  | "SWAP_REQUEST"
   | "PARENT_REQUEST"
   | "POST_PUBLISHED"
   | "ABSENCE"
