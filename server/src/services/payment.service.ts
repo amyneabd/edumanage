@@ -207,7 +207,7 @@ async function buildPupilLedger(pupilId: string, pupil: LedgerPupil) {
     const key = `${record.date.getFullYear()}-${String(record.date.getMonth() + 1).padStart(2, "0")}`;
     const entry = attendanceByPeriod.get(key) ?? { present: 0, absent: 0 };
     if (record.status === "PRESENT") entry.present += 1;
-    else entry.absent += 1;
+    else if (record.status === "ABSENT") entry.absent += 1;
     attendanceByPeriod.set(key, entry);
   }
 

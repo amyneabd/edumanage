@@ -94,6 +94,23 @@ describe("getPupilLedger", () => {
     expect(row?.absent).toBe(1);
   });
 
+  it("does not count EXCUSED attendance records as absent", async () => {
+    const period = previousPeriod(currentPeriod());
+    await setPaymentStatus(teacherId, pupilId, { period, status: "PAID", amountDue: 100, amountPaid: 100 });
+    await prisma.attendanceRecord.create({
+      data: { pupilId, classId, date: dateInPeriod(period, 3), status: "PRESENT" },
+    });
+    await prisma.attendanceRecord.create({
+      data: { pupilId, classId, date: dateInPeriod(period, 10), status: "EXCUSED" },
+    });
+
+    const ledger = await getPupilLedger(teacherId, pupilId);
+    const row = ledger.rows.find((r) => r.period === period);
+    expect(row).toBeDefined();
+    expect(row?.present).toBe(1);
+    expect(row?.absent).toBe(0);
+  });
+
   it("computes an all-time balance that goes negative when the pupil has paid in advance / has credit", async () => {
     const period = previousPeriod(currentPeriod());
     await setPaymentStatus(teacherId, pupilId, { period, status: "PAID", amountDue: 100, amountPaid: 150 });
