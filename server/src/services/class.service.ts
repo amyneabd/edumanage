@@ -46,15 +46,16 @@ export async function getClassDetail(teacherId: string, classId: string) {
     include: {
       pupils: { include: { user: { select: safeUserSelect }, payments: true } },
       scheduleSlots: true,
-      visitRequests: {
-        where: { status: "APPROVED", sessionDate: { gte: startOfToday } },
+      swapRequestsTarget: {
+        where: { status: "APPROVED", targetDate: { gte: startOfToday } },
         include: { pupil: { include: { user: { select: safeUserSelect } } } },
-        orderBy: { sessionDate: "asc" },
+        orderBy: { targetDate: "asc" },
       },
     },
   });
   if (!klass) throw new ClassError("Class not found.", 404);
-  return klass;
+  const { swapRequestsTarget, ...rest } = klass;
+  return { ...rest, swapVisitors: swapRequestsTarget };
 }
 
 export async function updateSchedule(
