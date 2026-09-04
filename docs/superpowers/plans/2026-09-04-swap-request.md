@@ -882,9 +882,18 @@ git commit -m "refactor: rename admin dossier pendingVisitRequests to pendingSwa
 
 - [ ] **Step 1: Update the controller**
 
-In `server/src/controllers/pupil.controller.ts`, update the import block (currently lines 1-14) to import from `../services/swap.service.js` instead of `../services/visit.service.js`:
+**CORRECTION (post-Task-7-preflight-check):** The original text below assumed (a) a project-wide `AuthedRequest` type exists, (b) `z`/zod is already imported in this file, and (c) the existing `handleVisitError` throws internally. All three are wrong — verified by reading the real `server/src/controllers/pupil.controller.ts` in full and grepping the codebase: every controller in `server/src/controllers/` (including this one) types handlers as `req: Request` from `"express"` (no `AuthedRequest` type exists anywhere in the repo); this file has no zod import today (though `zod` is already a dependency used the same way in `attendance.controller.ts`, `auth.controller.ts`, `goal.controller.ts`, `teacher.controller.ts`, `vacation.controller.ts` — so adding it here is consistent, it just isn't present yet); and the real `handleVisitError` (verified at lines 110-116) returns `true`/`false` — `if (err instanceof VisitError) { ...; return true; } return false;` — with call sites written `if (!handleVisitError(err, res)) throw err;`. This boolean-return-and-check-at-call-site shape is the pattern used identically in every sibling controller (`vacation.controller.ts`'s `handleVacationError`, `teacher.controller.ts`'s `handleServiceError`, `goal.controller.ts`'s `handleGoalError`, `parent.controller.ts`'s `handleParentError`, `attendance.controller.ts`'s `handleAttendanceError`) — it is the codebase convention, not a one-off, so it should be preserved rather than replaced with a throw-internally variant.
+
+In `server/src/controllers/pupil.controller.ts`, update the import block (currently lines 1-14) to import from `../services/swap.service.js` instead of `../services/visit.service.js`, and add the zod import (not previously present in this file):
 
 ```typescript
+import type { Request, Response } from "express";
+import { z } from "zod";
+import { listPostsForClass, submitToExam, getOwnGrades, PostError } from "../services/post.service.js";
+import { AttendanceError, getOwnAttendanceCalendar } from "../services/attendance.service.js";
+import { PaymentError, getOwnPaymentHistory } from "../services/payment.service.js";
+import { PupilError, getHomeSnapshot, getPupilProfileWithClass } from "../services/pupil.service.js";
+import { getClassScheduleView } from "../services/vacation.service.js";
 import {
   SwapError,
   listOtherClassesForPupil,
@@ -892,31 +901,32 @@ import {
   listOwnSwapRequests,
   cancelSwapRequest,
 } from "../services/swap.service.js";
+import { saveFile } from "../utils/storage.js";
 ```
 
-(keep the other existing imports in that block unchanged).
+(keep the other existing imports in that block unchanged — this is the same block with only the last named-import group replaced and `z` added).
 
-Rename `handleVisitError` (currently lines 110-116) to `handleSwapError`, replacing `VisitError` with `SwapError`:
+Rename `handleVisitError` (currently lines 110-116) to `handleSwapError`, replacing `VisitError` with `SwapError`, preserving the existing boolean-return shape:
 
 ```typescript
 function handleSwapError(err: unknown, res: Response) {
   if (err instanceof SwapError) {
     res.status(err.status).json({ error: err.message });
-    return;
+    return true;
   }
-  throw err;
+  return false;
 }
 ```
 
 Rename `otherClassesHandler` (currently lines 118-125) — body unchanged, just calls `listOtherClassesForPupil` and uses `handleSwapError`:
 
 ```typescript
-export async function otherClassesHandler(req: AuthedRequest, res: Response) {
+export async function otherClassesHandler(req: Request, res: Response) {
   try {
     const classes = await listOtherClassesForPupil(req.user!.id);
     res.json(classes);
   } catch (err) {
-    handleSwapError(err, res);
+    if (!handleSwapError(err, res)) throw err;
   }
 }
 ```
@@ -924,17 +934,17 @@ export async function otherClassesHandler(req: AuthedRequest, res: Response) {
 Rename `listVisitRequestsHandler` → `listSwapRequestsHandler` (currently lines 127-142), calling `listOwnSwapRequests`:
 
 ```typescript
-export async function listSwapRequestsHandler(req: AuthedRequest, res: Response) {
+export async function listSwapRequestsHandler(req: Request, res: Response) {
   try {
     const requests = await listOwnSwapRequests(req.user!.id);
     res.json(requests);
   } catch (err) {
-    handleSwapError(err, res);
+    if (!handleSwapError(err, res)) throw err;
   }
 }
 ```
 
-Rename `createVisitRequestHandler` → `createSwapRequestHandler` (currently lines 144-160). Update its Zod validation schema to the new dual-date shape and call `createSwapRequest`:
+Rename `createVisitRequestHandler` → `createSwapRequestHandler` (currently lines 144-160). Replace its old manual `typeof` checks with a Zod schema validating the new dual-date shape, and call `createSwapRequest`:
 
 ```typescript
 const createSwapRequestSchema = z.object({
@@ -944,7 +954,7 @@ const createSwapRequestSchema = z.object({
   reason: z.string().optional(),
 });
 
-export async function createSwapRequestHandler(req: AuthedRequest, res: Response) {
+export async function createSwapRequestHandler(req: Request, res: Response) {
   const parsed = createSwapRequestSchema.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: "Invalid request body." });
@@ -954,38 +964,57 @@ export async function createSwapRequestHandler(req: AuthedRequest, res: Response
     const request = await createSwapRequest(req.user!.id, parsed.data);
     res.status(201).json(request);
   } catch (err) {
-    handleSwapError(err, res);
+    if (!handleSwapError(err, res)) throw err;
   }
 }
 ```
 
-(Check the existing file for the exact Zod schema name/import used for the old `createVisitRequestSchema` and mirror its style; `z` is already imported at the top of the file per existing conventions.)
-
 Rename `cancelVisitRequestHandler` → `cancelSwapRequestHandler` (currently lines 162-169), calling `cancelSwapRequest`:
 
 ```typescript
-export async function cancelSwapRequestHandler(req: AuthedRequest, res: Response) {
+export async function cancelSwapRequestHandler(req: Request, res: Response) {
   try {
     await cancelSwapRequest(req.user!.id, req.params.id!);
     res.status(204).send();
   } catch (err) {
-    handleSwapError(err, res);
+    if (!handleSwapError(err, res)) throw err;
   }
 }
 ```
 
 - [ ] **Step 2: Update the routes**
 
-In `server/src/routes/pupil.routes.ts`, update the import list and route registrations (currently lines 30-33) to reference the renamed handlers:
+**CORRECTION (post-Task-7-preflight-check):** Verified the real `server/src/routes/pupil.routes.ts`: the import block is lines 4-16 (not 30-33 as originally stated), and the route registrations are lines 30-33. Also, the router variable in this file is named `pupilRouter` (not `router`), and the path segment is currently `/visit-requests` (not `/swap-requests` in the brief's earlier draft — this was already correct in the plan's Interfaces line but the code block below had drifted).
+
+In `server/src/routes/pupil.routes.ts`, update the import block (lines 4-16) to pull the renamed handler names:
 
 ```typescript
-router.get("/classes/other", otherClassesHandler);
-router.get("/swap-requests", listSwapRequestsHandler);
-router.post("/swap-requests", createSwapRequestHandler);
-router.delete("/swap-requests/:id", cancelSwapRequestHandler);
+import { Router } from "express";
+import { requireActive, requireAuth, requireEmailVerified, requireRole } from "../middleware/auth.middleware.js";
+import { upload } from "../middleware/upload.middleware.js";
+import {
+  attendanceCalendarHandler,
+  cancelSwapRequestHandler,
+  createSwapRequestHandler,
+  gradesHandler,
+  home,
+  listSwapRequestsHandler,
+  otherClassesHandler,
+  paymentHistoryHandler,
+  posts,
+  schedule,
+  submitExam,
+} from "../controllers/pupil.controller.js";
 ```
 
-Update the corresponding import statement at the top of the file to pull the renamed handler names from `../controllers/pupil.controller.js`.
+Update the route registrations (lines 30-33) to the new path and renamed handlers:
+
+```typescript
+pupilRouter.get("/classes/other", otherClassesHandler);
+pupilRouter.get("/swap-requests", listSwapRequestsHandler);
+pupilRouter.post("/swap-requests", createSwapRequestHandler);
+pupilRouter.delete("/swap-requests/:id", cancelSwapRequestHandler);
+```
 
 - [ ] **Step 3: Run the full server suite to confirm no regression**
 
