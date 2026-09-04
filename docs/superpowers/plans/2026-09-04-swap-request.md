@@ -1394,15 +1394,36 @@ git commit -m "refactor: rename VisitStatusBadge to SwapStatusBadge"
 ### Task 13: `client/src/lib/notificationMeta.ts` — add `SWAP_REQUEST` entry
 
 **Files:**
+- Modify: `client/src/api/types.ts:6-15`
 - Modify: `client/src/lib/notificationMeta.ts`
 
 **Interfaces:**
-- Consumes: `NotificationType` (now includes `"SWAP_REQUEST"`, from Task 1).
-- Produces: `notificationMeta.SWAP_REQUEST` entry — used wherever `notificationMeta` is rendered for the notification bell/list (not otherwise touched by this plan).
+- Consumes: backend `NotificationType` Prisma enum (now includes `"SWAP_REQUEST"`, inserted after `"VISIT_REQUEST"`, from Task 1).
+- Produces: client `NotificationType` widened to include `"SWAP_REQUEST"`; `NOTIFICATION_META.SWAP_REQUEST` entry — used wherever `NOTIFICATION_META` is rendered for the notification bell/list (`client/src/components/NotificationBell.tsx`, `client/src/features/teacher/RecentActivityCard.tsx` — not otherwise touched by this plan, they only index into the map by `n.type` with no exhaustive switch).
 
-- [ ] **Step 1: Update the implementation**
+**CORRECTION (post-Task-13-preflight-check):** The brief as originally written assumed the client's `NotificationType` union (in `client/src/api/types.ts`) already included `"SWAP_REQUEST"` "from Task 1" — but Task 1 only changed the backend Prisma schema; no task in this plan ever touched the client's separately hand-maintained `NotificationType` type. Verified the real `client/src/api/types.ts` (lines 6-15): it still only has `"VISIT_REQUEST"`, not `"SWAP_REQUEST"`. Since `NOTIFICATION_META` is typed `Record<NotificationType, {...}>` (verified in the real `notificationMeta.ts`), adding a `SWAP_REQUEST` key to that object literal without first widening `NotificationType` would be a TypeScript excess-property error ("object literal may only specify known properties"). Also verified the exported constant's real name is `NOTIFICATION_META` (not `notificationMeta` as the brief's prose called it — the code block itself was already correct, only the prose name was off). Added Step 1 below to widen the client type first; this must land before Step 2's `notificationMeta.ts` edit or `tsc`/tests will fail to compile.
 
-In `client/src/lib/notificationMeta.ts`, add a sibling entry immediately after the existing `VISIT_REQUEST` entry (currently line 10):
+- [ ] **Step 1: Widen the client `NotificationType` union**
+
+In `client/src/api/types.ts`, insert `"SWAP_REQUEST"` immediately after `"VISIT_REQUEST"` in the `NotificationType` union (currently lines 6-15), leaving every other value untouched:
+
+```typescript
+export type NotificationType =
+  | "PUPIL_REQUEST"
+  | "EXAM_SUBMISSION"
+  | "PAYMENT_DUE"
+  | "MONTHLY_RECAP"
+  | "VISIT_REQUEST"
+  | "SWAP_REQUEST"
+  | "PARENT_REQUEST"
+  | "POST_PUBLISHED"
+  | "ABSENCE"
+  | "SUBMISSION_MISSING";
+```
+
+- [ ] **Step 2: Update `notificationMeta.ts`**
+
+In `client/src/lib/notificationMeta.ts`, add a sibling entry immediately after the existing `VISIT_REQUEST` entry (currently line 10) in the `NOTIFICATION_META` object:
 
 ```typescript
   SWAP_REQUEST: { Icon: CalendarClock, color: "bg-accent-50 text-accent-600" },
@@ -1410,16 +1431,16 @@ In `client/src/lib/notificationMeta.ts`, add a sibling entry immediately after t
 
 (Same `Icon`/`color` as `VISIT_REQUEST` — read the file first to copy the exact current values verbatim, since this plan's snippet mirrors but does not override the source of truth.)
 
-- [ ] **Step 2: Run the full client suite to confirm no regression**
+- [ ] **Step 3: Run the full client suite to confirm no regression**
 
 Run: `npm test` (from `client/`)
 
-Expected: PASS (no test currently asserts on this specific map, per repository search during planning; if one exists, it should pass unmodified since this is a pure addition).
+Expected: PASS (no test currently asserts on this specific map, per repository search during planning; if one exists, it should pass unmodified since this is a pure addition). `tsc --noEmit` (or the type-check step of the test run) must also be clean now that `NotificationType` is widened before `NOTIFICATION_META` is extended.
 
-- [ ] **Step 3: Commit**
+- [ ] **Step 4: Commit**
 
 ```bash
-git add client/src/lib/notificationMeta.ts
+git add client/src/api/types.ts client/src/lib/notificationMeta.ts
 git commit -m "feat: add SWAP_REQUEST notification icon/color mapping"
 ```
 
