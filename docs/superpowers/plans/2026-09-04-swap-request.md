@@ -1246,14 +1246,16 @@ git commit -m "refactor: rename visit-request client types to swap-request shape
 
 - [ ] **Step 1: Update the implementation**
 
+**CORRECTION (post-Task-10-preflight-check):** The original text below invented a fetch-based `apiFetch(...)` helper that does not exist anywhere in this codebase (confirmed via grep: zero matches for `apiFetch` in `client/src`). Verified the real `client/src/api/pupil.ts`: it imports an axios instance `import { api } from "./client";` and every function follows the pattern `const { data } = await api.get/post/delete(path[, body][, { params }]); return data;` — e.g. the real current `fetchOtherClasses` (lines 50-53) is `const { data } = await api.get("/pupil/classes/other"); return data;`, and the real current `createVisitRequest`/`cancelVisitRequest` (lines 60-67) are `const { data } = await api.post("/pupil/visit-requests", input); return data;` and `await api.delete(...)`. The code below is the same three functions rewritten to that real convention, not the invented one.
+
 In `client/src/api/pupil.ts`, update the import block (currently lines 1-11) to import `PupilSwapRequest` instead of `PupilVisitRequest`.
 
 Replace `fetchOwnVisitRequests`/`createVisitRequest`/`cancelVisitRequest` (currently lines 55-67) with:
 
 ```typescript
 export async function fetchOwnSwapRequests(): Promise<PupilSwapRequest[]> {
-  const res = await apiFetch("/pupil/swap-requests");
-  return res.json();
+  const { data } = await api.get("/pupil/swap-requests");
+  return data;
 }
 
 export async function createSwapRequest(input: {
@@ -1262,19 +1264,14 @@ export async function createSwapRequest(input: {
   targetDate: string;
   reason?: string;
 }): Promise<PupilSwapRequest> {
-  const res = await apiFetch("/pupil/swap-requests", {
-    method: "POST",
-    body: JSON.stringify(input),
-  });
-  return res.json();
+  const { data } = await api.post("/pupil/swap-requests", input);
+  return data;
 }
 
 export async function cancelSwapRequest(id: string): Promise<void> {
-  await apiFetch(`/pupil/swap-requests/${id}`, { method: "DELETE" });
+  await api.delete(`/pupil/swap-requests/${id}`);
 }
 ```
-
-(Match the exact `apiFetch` call signature/base-path convention already used by `fetchOtherClasses` at lines 50-53 in the same file — read that function first to confirm the exact base path prefix, e.g. whether it's `/pupil/...` or a relative path with a shared base URL already applied.)
 
 - [ ] **Step 2: Run the full client suite to confirm no regression**
 
@@ -1302,29 +1299,28 @@ git commit -m "feat: rewire pupil api client to swap-request endpoints"
 
 - [ ] **Step 1: Update the implementation**
 
+**CORRECTION (post-Task-10-preflight-check):** Same invented `apiFetch` helper as Task 10 — it doesn't exist. Verified the real `client/src/api/teacher.ts`: it also imports `import { api } from "./client";`, and the real current `fetchVisitRequests`/`approveVisitRequest`/`declineVisitRequest` (lines 207-220) are `const { data } = await api.get("/teacher/visit-requests", { params: status ? { status } : undefined }); return data;` and `const { data } = await api.post(\`/teacher/visit-requests/${id}/approve\`); return data;` (no request body). The code below is the same three functions rewritten to that real convention — using axios's `params` object for the optional query string, not manual string interpolation.
+
 In `client/src/api/teacher.ts`, update the import block (currently lines 1-26) to import `TeacherSwapRequest`/`SwapRequestStatus` instead of `TeacherVisitRequest`/`VisitRequestStatus`.
 
 Replace `fetchVisitRequests`/`approveVisitRequest`/`declineVisitRequest` (currently lines 207-220) with:
 
 ```typescript
 export async function fetchSwapRequests(status?: SwapRequestStatus): Promise<TeacherSwapRequest[]> {
-  const query = status ? `?status=${status}` : "";
-  const res = await apiFetch(`/teacher/swap-requests${query}`);
-  return res.json();
+  const { data } = await api.get("/teacher/swap-requests", { params: status ? { status } : undefined });
+  return data;
 }
 
 export async function approveSwapRequest(id: string): Promise<TeacherSwapRequest> {
-  const res = await apiFetch(`/teacher/swap-requests/${id}/approve`, { method: "POST" });
-  return res.json();
+  const { data } = await api.post(`/teacher/swap-requests/${id}/approve`);
+  return data;
 }
 
 export async function declineSwapRequest(id: string): Promise<TeacherSwapRequest> {
-  const res = await apiFetch(`/teacher/swap-requests/${id}/decline`, { method: "POST" });
-  return res.json();
+  const { data } = await api.post(`/teacher/swap-requests/${id}/decline`);
+  return data;
 }
 ```
-
-(Match the exact `apiFetch` base-path/query-string convention already used elsewhere in this file.)
 
 - [ ] **Step 2: Run the full client suite to confirm no regression**
 
