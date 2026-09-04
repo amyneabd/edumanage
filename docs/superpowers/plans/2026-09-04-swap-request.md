@@ -1044,7 +1044,9 @@ git commit -m "feat: rewire pupil visit-request endpoints to swap requests"
 
 - [ ] **Step 1: Update the controller**
 
-In `server/src/controllers/teacher.controller.ts`, update the import block (currently lines 1-47) to import from `../services/swap.service.js` instead of `../services/visit.service.js`:
+**CORRECTION (post-Task-8-preflight-check):** The original text below omitted the actual response-mapping code for `swapRequestsHandler` (it only said "calling `listSwapRequestsForTeacher(...)`", a placeholder gap) — this matters because `listSwapRequestsForTeacher` (Task 2) returns raw Prisma rows with `originClass`/`targetClass`/`pupil` joins, while the client's `TeacherSwapRequest` type (Task 9, already grounded) expects a flattened shape (`pupilName`, `originClassName`, `targetClassName`, etc.) consumed directly by `SwapRequestRow` in Task 15. Verified the real current `visitRequestsHandler` (lines 397-419) does its own flattening today (`pupilName: r.pupil.user.name`, etc.) — so the new handler must do the analogous flattening, not just forward the raw join. The code below is that exact mapping, derived field-for-field from Task 9's `TeacherSwapRequest` type. Also verified the real import block only needs its `visit.service.js` import (lines 36-40) swapped — the surrounding imports (`class.service.js`, `payment.service.js`, `post.service.js`, `parent.service.js`, `vacation.service.js`) stay untouched.
+
+In `server/src/controllers/teacher.controller.ts`, replace the `visit.service.js` import (lines 36-40) with:
 
 ```typescript
 import { SwapError, listSwapRequestsForTeacher, respondToSwapRequest } from "../services/swap.service.js";
@@ -1052,20 +1054,66 @@ import { SwapError, listSwapRequestsForTeacher, respondToSwapRequest } from "../
 
 Update `handleServiceError` (currently lines 49-61) — it references `err instanceof VisitError` alongside other service error classes; change that check to `err instanceof SwapError`.
 
-Rename `visitRequestsHandler` → `swapRequestsHandler` (currently lines 397-419), calling `listSwapRequestsForTeacher(req.user!.id, status)` where `status` is parsed the same way the existing handler parses its optional `status` query param.
+Replace `visitRequestsHandler` (currently lines 397-419) with `swapRequestsHandler`, flattening `listSwapRequestsForTeacher`'s joined rows into the `TeacherSwapRequest` shape:
 
-Rename `approveVisitRequestHandler` → `approveSwapRequestHandler` (currently lines 421-428), calling `respondToSwapRequest(req.user!.id, req.params.id!, "APPROVED")`.
+```typescript
+export async function swapRequestsHandler(req: Request, res: Response) {
+  const status = req.query.status;
+  const requests = await listSwapRequestsForTeacher(
+    req.user!.id,
+    status === "PENDING" || status === "APPROVED" || status === "DECLINED" ? status : undefined
+  );
+  res.json(
+    requests.map((r) => ({
+      id: r.id,
+      pupilId: r.pupilId,
+      pupilName: r.pupil.user.name,
+      originClassId: r.originClassId,
+      originClassName: r.originClass.name,
+      originDate: r.originDate,
+      targetClassId: r.targetClassId,
+      targetClassName: r.targetClass.name,
+      targetDate: r.targetDate,
+      reason: r.reason,
+      status: r.status,
+      createdAt: r.createdAt,
+    }))
+  );
+}
+```
 
-Rename `declineVisitRequestHandler` → `declineSwapRequestHandler` (currently lines 430-437), calling `respondToSwapRequest(req.user!.id, req.params.id!, "DECLINED")`.
+Replace `approveVisitRequestHandler` (currently lines 421-428) with `approveSwapRequestHandler`, and `declineVisitRequestHandler` (currently lines 430-437) with `declineSwapRequestHandler` — these two keep the existing file's pass-through-response pattern (the real current code does `res.json(request)` on `respondToVisitRequest`'s raw return value, with no flattening; `respondToSwapRequest`, Task 2, likewise returns the raw updated `SwapRequest` row, so no flattening is possible or expected here — the client's approve/decline calls only trigger a query invalidation and never read fields off this specific response, per Task 15):
+
+```typescript
+export async function approveSwapRequestHandler(req: Request, res: Response) {
+  try {
+    const request = await respondToSwapRequest(req.user!.id, req.params.id!, "APPROVED");
+    res.json(request);
+  } catch (err) {
+    if (!handleServiceError(err, res)) throw err;
+  }
+}
+
+export async function declineSwapRequestHandler(req: Request, res: Response) {
+  try {
+    const request = await respondToSwapRequest(req.user!.id, req.params.id!, "DECLINED");
+    res.json(request);
+  } catch (err) {
+    if (!handleServiceError(err, res)) throw err;
+  }
+}
+```
 
 - [ ] **Step 2: Update the routes**
 
-In `server/src/routes/teacher.routes.ts`, update the import list (currently lines 4-59, alphabetized — insert the renamed names in the correct alphabetical position) and the route registrations (currently lines 105-107):
+**CORRECTION (post-Task-8-preflight-check):** Verified the real `server/src/routes/teacher.routes.ts`: the router variable is named `teacherRouter` (not `router`), and the import list (lines 4-33) is alphabetized by export name. `approveSwapRequestHandler` sorts between `approveParentRequestHandler` and `assignPupilRequest`; `declineSwapRequestHandler` sorts between `declineParentRequestHandler` and `deletePostHandler`; `swapRequestsHandler` sorts between `rejectPupilRequestHandler` and `updateClassFeeHandler` (replacing `visitRequestsHandler`'s old alphabetical slot, which was last in the list under `v`).
+
+In `server/src/routes/teacher.routes.ts`, update the import list (lines 4-33) to remove `approveVisitRequestHandler`, `declineVisitRequestHandler`, `visitRequestsHandler` and insert `approveSwapRequestHandler`, `declineSwapRequestHandler`, `swapRequestsHandler` in their correct alphabetical positions as described above. Then replace the route registrations (lines 105-107):
 
 ```typescript
-router.get("/swap-requests", swapRequestsHandler);
-router.post("/swap-requests/:id/approve", approveSwapRequestHandler);
-router.post("/swap-requests/:id/decline", declineSwapRequestHandler);
+teacherRouter.get("/swap-requests", swapRequestsHandler);
+teacherRouter.post("/swap-requests/:id/approve", approveSwapRequestHandler);
+teacherRouter.post("/swap-requests/:id/decline", declineSwapRequestHandler);
 ```
 
 - [ ] **Step 3: Delete the old visit service**
