@@ -1348,15 +1348,17 @@ git commit -m "feat: rewire teacher api client to swap-request endpoints"
 
 - [ ] **Step 1: Update the implementation**
 
+**CORRECTION (post-Task-12-preflight-check):** The original code block below (colors `bg-amber-50`/`bg-emerald-50`/`bg-rose-50`, template-literal `className` with `items-center rounded-full px-2.5 py-0.5`) was a hallucination — it did not match the real file. Verified the real current `client/src/components/Badge.tsx` (lines 53-71): the actual `visitStatusColors` values are `bg-warning-100 text-warning-700` / `bg-success-50 text-success-700` / `bg-danger-50 text-danger-600`, matching the same color tokens `PaymentBadge`/`StatusBadge` use elsewhere in this file; and the actual markup uses the file's shared `clsx(...)` helper (already imported at line 1) with classes `inline-flex rounded-sm px-2.5 py-1 text-xs font-medium`, exactly like every other badge component in this file — not a template literal. The block below is corrected to those real values and that real markup pattern; this is a pure identifier rename, not a value/style change.
+
 In `client/src/components/Badge.tsx`, update the import at line 2 to import `SwapRequestStatus` instead of `VisitRequestStatus`.
 
 Rename the block at lines 53-71:
 
 ```typescript
 const swapStatusColors: Record<SwapRequestStatus, string> = {
-  PENDING: "bg-amber-50 text-amber-700",
-  APPROVED: "bg-emerald-50 text-emerald-700",
-  DECLINED: "bg-rose-50 text-rose-700",
+  PENDING: "bg-warning-100 text-warning-700",
+  APPROVED: "bg-success-50 text-success-700",
+  DECLINED: "bg-danger-50 text-danger-600",
 };
 
 const swapStatusLabels: Record<SwapRequestStatus, string> = {
@@ -1367,14 +1369,12 @@ const swapStatusLabels: Record<SwapRequestStatus, string> = {
 
 export function SwapStatusBadge({ status }: { status: SwapRequestStatus }) {
   return (
-    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${swapStatusColors[status]}`}>
+    <span className={clsx("inline-flex rounded-sm px-2.5 py-1 text-xs font-medium", swapStatusColors[status])}>
       {swapStatusLabels[status]}
     </span>
   );
 }
 ```
-
-(Keep the exact color/label values from the current `visitStatusColors`/`visitStatusLabels` — only the identifiers change, not the values, unless the current file's values differ from this template; read the file first to confirm the exact current values and preserve them verbatim.)
 
 - [ ] **Step 2: Run the full client suite to confirm no regression**
 
