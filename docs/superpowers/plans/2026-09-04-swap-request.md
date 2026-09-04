@@ -27,25 +27,27 @@
 - Modify: `server/prisma/schema.prisma`
 
 **Interfaces:**
-- Produces: `SwapRequestStatus` enum (`PENDING`, `APPROVED`, `DECLINED`, `CANCELLED` — same values as old `VisitRequestStatus`), `SwapRequest` model with fields `id`, `pupilId`, `originClassId`, `originDate`, `targetClassId`, `targetDate`, `reason`, `status`, `createdAt`, `updatedAt`, relations `pupil` (→ `PupilProfile`), `originClass` (→ `Class`, `@relation("SwapRequestOrigin")`), `targetClass` (→ `Class`, `@relation("SwapRequestTarget")`). `AttendanceStatus` enum gains `EXCUSED`. `NotificationType` enum gains `SWAP_REQUEST`. `PupilProfile.swapRequests: SwapRequest[]`. `Class.swapRequestsOrigin: SwapRequest[]` and `Class.swapRequestsTarget: SwapRequest[]`.
+- Produces: `SwapRequestStatus` enum (`PENDING`, `APPROVED`, `DECLINED` — same values as old `VisitRequestStatus`, unchanged), `SwapRequest` model with fields `id`, `pupilId`, `originClassId`, `originDate`, `targetClassId`, `targetDate`, `reason`, `status`, `createdAt`, `updatedAt`, relations `pupil` (→ `PupilProfile`), `originClass` (→ `Class`, `@relation("SwapRequestOrigin")`), `targetClass` (→ `Class`, `@relation("SwapRequestTarget")`). `AttendanceStatus` enum gains `EXCUSED`. `NotificationType` enum gains `SWAP_REQUEST` (inserted after `VISIT_REQUEST`, no other values touched). `PupilProfile.swapRequests: SwapRequest[]`. `Class.swapRequestsOrigin: SwapRequest[]` and `Class.swapRequestsTarget: SwapRequest[]`.
 - Consumes: nothing (first task).
+
+**CORRECTION (post-Task-1-review):** the original code blocks below for `NotificationType` and `VisitRequestStatus` did not match the actual repo content and have been corrected. The real original `NotificationType` enum is `PUPIL_REQUEST, EXAM_SUBMISSION, PAYMENT_DUE, MONTHLY_RECAP, VISIT_REQUEST, PARENT_REQUEST, POST_PUBLISHED, ABSENCE, SUBMISSION_MISSING` — only `SWAP_REQUEST` is inserted, nothing else changes. The real original `VisitRequestStatus` enum is `PENDING, APPROVED, DECLINED` (3 values, no `CANCELLED`) — the spec's `cancelSwapRequest` always deletes the row rather than setting a cancelled status, so no `CANCELLED` value is ever needed; `SwapRequestStatus` keeps exactly those 3 values.
 
 This is a DDL-only task — there is no failing test to write first. Implement the schema changes, run the migration, then run the full server test suite to confirm no regression (nothing currently exercises `visit.service.ts` directly, so dropping `VisitRequest` is safe at this point).
 
-- [ ] **Step 1: Edit `NotificationType` enum** — insert `SWAP_REQUEST` immediately after `VISIT_REQUEST` (currently line 47):
+- [ ] **Step 1: Edit `NotificationType` enum** — insert `SWAP_REQUEST` immediately after `VISIT_REQUEST`, leaving every other existing value untouched:
 
 ```prisma
 enum NotificationType {
-  ABSENCE
+  PUPIL_REQUEST
+  EXAM_SUBMISSION
   PAYMENT_DUE
-  PAYMENT_OVERDUE
-  ANNOUNCEMENT
+  MONTHLY_RECAP
   VISIT_REQUEST
   SWAP_REQUEST
-  VACATION_SESSION
-  ENROLLMENT_APPROVED
-  ENROLLMENT_REJECTED
-  PUPIL_REGISTERED
+  PARENT_REQUEST
+  POST_PUBLISHED
+  ABSENCE
+  SUBMISSION_MISSING
 }
 ```
 
@@ -59,14 +61,13 @@ enum AttendanceStatus {
 }
 ```
 
-- [ ] **Step 3: Rename `VisitRequestStatus` to `SwapRequestStatus`** (currently lines 59-63), values unchanged:
+- [ ] **Step 3: Rename `VisitRequestStatus` to `SwapRequestStatus`** (currently lines 59-63), values unchanged (3 values, no `CANCELLED`):
 
 ```prisma
 enum SwapRequestStatus {
   PENDING
   APPROVED
   DECLINED
-  CANCELLED
 }
 ```
 
@@ -1063,7 +1064,7 @@ Read `client/src/api/types.ts` in full first to get exact current line numbers f
 - [ ] **Step 1: Rename `VisitRequestStatus` to `SwapRequestStatus`**
 
 ```typescript
-export type SwapRequestStatus = "PENDING" | "APPROVED" | "DECLINED" | "CANCELLED";
+export type SwapRequestStatus = "PENDING" | "APPROVED" | "DECLINED";
 ```
 
 - [ ] **Step 2: Widen `AttendanceStatus` and `AttendanceDisplay`** to include `"EXCUSED"`:
@@ -1264,14 +1265,12 @@ const swapStatusColors: Record<SwapRequestStatus, string> = {
   PENDING: "bg-amber-50 text-amber-700",
   APPROVED: "bg-emerald-50 text-emerald-700",
   DECLINED: "bg-rose-50 text-rose-700",
-  CANCELLED: "bg-slate-100 text-slate-500",
 };
 
 const swapStatusLabels: Record<SwapRequestStatus, string> = {
   PENDING: "Pending",
   APPROVED: "Approved",
   DECLINED: "Declined",
-  CANCELLED: "Cancelled",
 };
 
 export function SwapStatusBadge({ status }: { status: SwapRequestStatus }) {
