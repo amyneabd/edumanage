@@ -4,13 +4,13 @@ import { upload } from "../middleware/upload.middleware.js";
 import {
   allParentRequestsHandler,
   approveParentRequestHandler,
-  approveVisitRequestHandler,
+  approveSwapRequestHandler,
   assignPupilRequest,
   classDetail,
   createClassHandler,
   createPostHandler,
   declineParentRequestHandler,
-  declineVisitRequestHandler,
+  declineSwapRequestHandler,
   deletePostHandler,
   deletePupilFromClass,
   gradebookHandler,
@@ -25,11 +25,11 @@ import {
   pupilPaymentHistoryHandler,
   pupilRequests,
   rejectPupilRequestHandler,
+  swapRequestsHandler,
   updateClassFeeHandler,
   updatePayment,
   updatePostHandler,
   updateScheduleHandler,
-  visitRequestsHandler,
 } from "../controllers/teacher.controller.js";
 import {
   getNotifications,
@@ -102,9 +102,9 @@ teacherRouter.delete("/posts/:id", deletePostHandler);
 teacherRouter.get("/gradebook", gradebookHandler);
 teacherRouter.patch("/submissions/:id/grade", gradeSubmissionHandler);
 
-teacherRouter.get("/visit-requests", visitRequestsHandler);
-teacherRouter.post("/visit-requests/:id/approve", approveVisitRequestHandler);
-teacherRouter.post("/visit-requests/:id/decline", declineVisitRequestHandler);
+teacherRouter.get("/swap-requests", swapRequestsHandler);
+teacherRouter.post("/swap-requests/:id/approve", approveSwapRequestHandler);
+teacherRouter.post("/swap-requests/:id/decline", declineSwapRequestHandler);
 
 teacherRouter.get("/parent-requests", allParentRequestsHandler);
 teacherRouter.post("/parent-requests/:id/approve", approveParentRequestHandler);

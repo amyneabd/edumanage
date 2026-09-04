@@ -33,11 +33,7 @@ import {
   listPostsForClass,
   updatePost,
 } from "../services/post.service.js";
-import {
-  VisitError,
-  listVisitRequestsForTeacher,
-  respondToVisitRequest,
-} from "../services/visit.service.js";
+import { SwapError, listSwapRequestsForTeacher, respondToSwapRequest } from "../services/swap.service.js";
 import {
   ParentError,
   listAllParentRequests,
@@ -51,7 +47,7 @@ function handleServiceError(err: unknown, res: Response) {
     err instanceof ClassError ||
     err instanceof PaymentError ||
     err instanceof PostError ||
-    err instanceof VisitError ||
+    err instanceof SwapError ||
     err instanceof ParentError
   ) {
     res.status(err.status).json({ error: err.message });
@@ -394,42 +390,42 @@ export async function gradebookHandler(req: Request, res: Response) {
   }
 }
 
-export async function visitRequestsHandler(req: Request, res: Response) {
+export async function swapRequestsHandler(req: Request, res: Response) {
   const status = req.query.status;
-  const requests = await listVisitRequestsForTeacher(
+  const requests = await listSwapRequestsForTeacher(
     req.user!.id,
     status === "PENDING" || status === "APPROVED" || status === "DECLINED" ? status : undefined
   );
   res.json(
     requests.map((r) => ({
       id: r.id,
-      classId: r.classId,
-      className: r.class.name,
-      classType: r.class.type,
       pupilId: r.pupilId,
       pupilName: r.pupil.user.name,
-      pupilEmail: r.pupil.user.email,
-      sessionDate: r.sessionDate,
+      originClassId: r.originClassId,
+      originClassName: r.originClass.name,
+      originDate: r.originDate,
+      targetClassId: r.targetClassId,
+      targetClassName: r.targetClass.name,
+      targetDate: r.targetDate,
       reason: r.reason,
       status: r.status,
       createdAt: r.createdAt,
-      respondedAt: r.respondedAt,
     }))
   );
 }
 
-export async function approveVisitRequestHandler(req: Request, res: Response) {
+export async function approveSwapRequestHandler(req: Request, res: Response) {
   try {
-    const request = await respondToVisitRequest(req.user!.id, req.params.id as string, true);
+    const request = await respondToSwapRequest(req.user!.id, req.params.id as string, "APPROVED");
     res.json(request);
   } catch (err) {
     if (!handleServiceError(err, res)) throw err;
   }
 }
 
-export async function declineVisitRequestHandler(req: Request, res: Response) {
+export async function declineSwapRequestHandler(req: Request, res: Response) {
   try {
-    const request = await respondToVisitRequest(req.user!.id, req.params.id as string, false);
+    const request = await respondToSwapRequest(req.user!.id, req.params.id as string, "DECLINED");
     res.json(request);
   } catch (err) {
     if (!handleServiceError(err, res)) throw err;

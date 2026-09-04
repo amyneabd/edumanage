@@ -157,7 +157,7 @@ export async function createSwapRequestHandler(req: Request, res: Response) {
 
 export async function cancelSwapRequestHandler(req: Request, res: Response) {
   try {
-    await cancelSwapRequest(req.user!.id, req.params.id!);
+    await cancelSwapRequest(req.user!.id, req.params.id as string);
     res.status(204).send();
   } catch (err) {
     if (!handleSwapError(err, res)) throw err;
