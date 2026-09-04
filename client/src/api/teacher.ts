@@ -18,11 +18,11 @@ import type {
   PupilLedger,
   PupilRequest,
   ScheduleSlot,
+  SwapRequestStatus,
   TeacherParentRequest,
-  TeacherVisitRequest,
+  TeacherSwapRequest,
   VacationPeriod,
   VacationSessionEntry,
-  VisitRequestStatus,
 } from "./types";
 
 export async function fetchOverview(): Promise<OverviewData> {
@@ -204,18 +204,18 @@ export async function fetchGradebook(classId: string): Promise<Gradebook> {
   return data;
 }
 
-export async function fetchVisitRequests(status?: VisitRequestStatus): Promise<TeacherVisitRequest[]> {
-  const { data } = await api.get("/teacher/visit-requests", { params: status ? { status } : undefined });
+export async function fetchSwapRequests(status?: SwapRequestStatus): Promise<TeacherSwapRequest[]> {
+  const { data } = await api.get("/teacher/swap-requests", { params: status ? { status } : undefined });
   return data;
 }
 
-export async function approveVisitRequest(id: string) {
-  const { data } = await api.post(`/teacher/visit-requests/${id}/approve`);
+export async function approveSwapRequest(id: string): Promise<TeacherSwapRequest> {
+  const { data } = await api.post(`/teacher/swap-requests/${id}/approve`);
   return data;
 }
 
-export async function declineVisitRequest(id: string) {
-  const { data } = await api.post(`/teacher/visit-requests/${id}/decline`);
+export async function declineSwapRequest(id: string): Promise<TeacherSwapRequest> {
+  const { data } = await api.post(`/teacher/swap-requests/${id}/decline`);
   return data;
 }
 
