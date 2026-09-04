@@ -80,7 +80,7 @@ export async function getTeacherDetail(teacherId: string) {
 
   const period = currentPeriod();
 
-  const [classes, ledger, ledgerSummary, posts, attendance, pendingPupilRequests, pendingVisitRequests] =
+  const [classes, ledger, ledgerSummary, posts, attendance, pendingPupilRequests, pendingSwapRequests] =
     await Promise.all([
       listClassesForTeacher(teacherId),
       getLedger(teacherId, { period }),
@@ -88,7 +88,7 @@ export async function getTeacherDetail(teacherId: string) {
       listPostsForTeacher(teacherId),
       getAttendanceOverviewForTeacher(teacherId),
       prisma.pupilProfile.count({ where: { teacherId, classId: null, user: { status: "PENDING" } } }),
-      prisma.visitRequest.count({ where: { class: { teacherId }, status: "PENDING" } }),
+      prisma.swapRequest.count({ where: { originClass: { teacherId }, status: "PENDING" } }),
     ]);
 
   return {
@@ -104,6 +104,6 @@ export async function getTeacherDetail(teacherId: string) {
     posts,
     attendance,
     pendingPupilRequests,
-    pendingVisitRequests,
+    pendingSwapRequests,
   };
 }
