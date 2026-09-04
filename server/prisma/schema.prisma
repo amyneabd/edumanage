@@ -45,21 +45,30 @@ enum NotificationType {
   PAYMENT_DUE
   MONTHLY_RECAP
   VISIT_REQUEST
+  SWAP_REQUEST
   PARENT_REQUEST
   POST_PUBLISHED
   ABSENCE
   SUBMISSION_MISSING
+  PAYMENT_OVERDUE
+  ANNOUNCEMENT
+  VACATION_SESSION
+  ENROLLMENT_APPROVED
+  ENROLLMENT_REJECTED
+  PUPIL_REGISTERED
 }
 
 enum AttendanceStatus {
   PRESENT
   ABSENT
+  EXCUSED
 }
 
-enum VisitRequestStatus {
+enum SwapRequestStatus {
   PENDING
   APPROVED
   DECLINED
+  CANCELLED
 }
 
 enum ParentLinkStatus {
@@ -136,7 +145,7 @@ model PupilProfile {
   payments      PaymentRecord[]
   submissions   PostSubmission[]
   attendance    AttendanceRecord[]
-  visitRequests VisitRequest[]
+  swapRequests  SwapRequest[]
   parentLinks   ParentLink[]
 }
 
@@ -174,7 +183,8 @@ model Class {
   scheduleSlots    ScheduleSlot[]
   posts            Post[]
   attendance       AttendanceRecord[]
-  visitRequests    VisitRequest[]
+  swapRequestsOrigin SwapRequest[] @relation("SwapRequestOrigin")
+  swapRequestsTarget SwapRequest[] @relation("SwapRequestTarget")
   vacationSessions VacationSession[]
   createdAt        DateTime           @default(now())
 }
@@ -277,20 +287,24 @@ model AttendanceRecord {
   @@index([classId, date])
 }
 
-model VisitRequest {
-  id          String             @id @default(cuid())
-  pupilId     String
-  pupil       PupilProfile       @relation(fields: [pupilId], references: [userId], onDelete: Cascade)
-  classId     String
-  class       Class              @relation(fields: [classId], references: [id], onDelete: Cascade)
-  sessionDate DateTime
-  reason      String?
-  status      VisitRequestStatus @default(PENDING)
-  createdAt   DateTime           @default(now())
-  respondedAt DateTime?
+model SwapRequest {
+  id            String            @id @default(cuid())
+  pupilId       String
+  pupil         PupilProfile      @relation(fields: [pupilId], references: [userId], onDelete: Cascade)
+  originClassId String
+  originClass   Class             @relation("SwapRequestOrigin", fields: [originClassId], references: [id], onDelete: Cascade)
+  originDate    DateTime
+  targetClassId String
+  targetClass   Class             @relation("SwapRequestTarget", fields: [targetClassId], references: [id], onDelete: Cascade)
+  targetDate    DateTime
+  reason        String?
+  status        SwapRequestStatus @default(PENDING)
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
 
-  @@index([classId, status])
   @@index([pupilId])
+  @@index([originClassId])
+  @@index([targetClassId])
 }
 
 model Goal {
