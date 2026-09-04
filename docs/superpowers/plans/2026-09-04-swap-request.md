@@ -764,35 +764,50 @@ git commit -m "fix: exclude EXCUSED attendance from ledger absence counts"
 - Consumes: `Class.swapRequestsTarget` relation (Task 1), `SwapRequest.targetDate` field (Task 1).
 - Produces: `getClassDetail`'s returned `klass.swapVisitors` field (renamed from `visitRequests`) — relied on by Task 16 (`ClassDetailPage.tsx`).
 
-This is a pure rename inside an existing query — no new test file needed; the change is covered by running the full suite. First read the current exact block to confirm line numbers before editing (content already captured):
+**CORRECTION (post-Task-5-preflight-check):** The original text below assumed (a) the current query's `pupil` include only selects `{ name: true }`, and (b) `getClassDetail` already contains a separate return/mapping statement that renames a field. Both are wrong — verified by reading the real `server/src/services/class.service.ts:39-56` in this worktree: the real `pupil` include uses `select: safeUserSelect` (id/name/email/status/createdAt), and the function returns the raw Prisma result (`return klass;`) with no mapping step at all. The spec (`docs/superpowers/specs/2026-09-04-swap-request-design.md:174`) is explicit that this panel is "otherwise unchanged (still just target-side approved swaps for this class)" — i.e. this is a pure rename of the relation/field, NOT a reshape. Prisma's `include` does not support aliasing the result key to something other than the relation name, so producing a `swapVisitors` key (rather than `swapRequestsTarget`) requires an explicit destructure-and-rename after the query — that step did not previously exist and must be added, not "found."
+
+This is a pure rename (relation name + one field name), reshaping nothing — no new test file needed; the change is covered by running the full suite. Read the current exact block in `server/src/services/class.service.ts` (inside `getClassDetail`) before editing:
 
 ```typescript
+  const klass = await prisma.class.findFirst({
+    where: { id: classId, teacherId },
     include: {
+      pupils: { include: { user: { select: safeUserSelect }, payments: true } },
       scheduleSlots: true,
       visitRequests: {
         where: { status: "APPROVED", sessionDate: { gte: startOfToday } },
-        include: { pupil: { include: { user: { select: { name: true } } } } },
+        include: { pupil: { include: { user: { select: safeUserSelect } } } },
         orderBy: { sessionDate: "asc" },
       },
     },
+  });
+  if (!klass) throw new ClassError("Class not found.", 404);
+  return klass;
 ```
 
 - [ ] **Step 1: Update the implementation**
 
-In `server/src/services/class.service.ts`, replace the `visitRequests` include block (currently within `getClassDetail`, lines 40-58) with:
+In `server/src/services/class.service.ts`, replace the whole block above with:
 
 ```typescript
+  const klass = await prisma.class.findFirst({
+    where: { id: classId, teacherId },
     include: {
+      pupils: { include: { user: { select: safeUserSelect }, payments: true } },
       scheduleSlots: true,
       swapRequestsTarget: {
         where: { status: "APPROVED", targetDate: { gte: startOfToday } },
-        include: { pupil: { include: { user: { select: { name: true } } } } },
+        include: { pupil: { include: { user: { select: safeUserSelect } } } },
         orderBy: { targetDate: "asc" },
       },
     },
+  });
+  if (!klass) throw new ClassError("Class not found.", 404);
+  const { swapRequestsTarget, ...rest } = klass;
+  return { ...rest, swapVisitors: swapRequestsTarget };
 ```
 
-Then find the return/mapping statement in the same function that reads `visitRequests` off the query result and rename it to build a `swapVisitors` field on the returned object (map each entry's `pupil`/`targetDate` as before, just renamed from `sessionDate`).
+(The relation is renamed `visitRequests` → `swapRequestsTarget` per Task 1's schema; the query's `where`/`orderBy` now reference `targetDate` instead of `sessionDate` per Task 1's `SwapRequest` model; the final two lines add the destructure-and-rename that didn't exist before, exposing the same array of objects — same nested `pupil.user` shape as before — under the key `swapVisitors` that Task 16 consumes.)
 
 - [ ] **Step 2: Run the full server suite to confirm no regression**
 
@@ -1076,11 +1091,15 @@ export type AttendanceDisplay = "FUTURE" | "TODAY" | "PRESENT" | "ABSENT" | "EXC
 
 - [ ] **Step 3: Rename `ClassVisitor` to `ClassSwapVisitor`**, renaming its `sessionDate` field to `targetDate`:
 
+**CORRECTION (post-Task-5-preflight-check):** The original type below wrongly reshaped `ClassVisitor` to a flat `{ pupilId, pupilName, targetDate }`, dropping `id`, `reason`, and `pupil.user.email`. Verified against the real current `client/src/api/types.ts` (`ClassVisitor = { id: string; pupilId: string; sessionDate: string; reason: string | null; pupil: { user: { name: string; email: string } } }`) and the spec (`docs/superpowers/specs/2026-09-04-swap-request-design.md:174`), which says this panel is "otherwise unchanged" — this must be a pure field rename, not a reshape:
+
 ```typescript
 export type ClassSwapVisitor = {
+  id: string;
   pupilId: string;
-  pupilName: string;
   targetDate: string;
+  reason: string | null;
+  pupil: { user: { name: string; email: string } };
 };
 ```
 
@@ -1620,22 +1639,40 @@ git commit -m "feat: rebuild teacher classes page swap-request row for origin/ta
 
 - [ ] **Step 1: Update the implementation**
 
-In `client/src/features/teacher/ClassDetailPage.tsx`, update the "Upcoming visitors" panel (currently lines 389-418):
+**CORRECTION (post-Task-5-preflight-check):** The JSX block originally shown here did not match the real file at all (wrong markup, wrong class names, missing the `EmptyState` component, missing `pupil.user.email` and `reason` display) — it was invented rather than read from the repo. Verified against the real current `client/src/features/teacher/ClassDetailPage.tsx` (the "Upcoming visitors" `<Card>` block). Per the spec (line 174), this panel is "otherwise unchanged" other than the field rename — so only `klass.visitRequests` → `klass.swapVisitors` and `v.sessionDate` → `v.targetDate` change; every other line, class name, and the `EmptyState` usage stay exactly as they are.
+
+In `client/src/features/teacher/ClassDetailPage.tsx`, find the "Upcoming visitors" `<Card>` block (search for `Upcoming visitors`) and change only the two field references:
 
 ```typescript
 {(klass.swapVisitors?.length ?? 0) === 0 ? (
-  <p className="text-sm text-slate-500">No upcoming visitors.</p>
+  <div className="mt-3">
+    <EmptyState title="No upcoming visitors" description="Approved one-off session requests will show here." />
+  </div>
 ) : (
-  klass.swapVisitors!.map((v) => (
-    <div key={`${v.pupilId}-${v.targetDate}`} className="flex items-center justify-between py-2">
-      <span className="text-sm text-slate-700">{v.pupilName}</span>
-      <span className="text-sm text-slate-500">{v.targetDate}</span>
-    </div>
-  ))
+  <ul className="mt-3 divide-y divide-border">
+    {klass.swapVisitors!.map((v) => (
+      <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
+        <div>
+          <p className="text-sm font-medium text-ink-900">{v.pupil.user.name}</p>
+          <p className="text-xs text-ink-500">{v.pupil.user.email}</p>
+        </div>
+        <div className="text-right">
+          <p className="text-sm text-ink-700">
+            {new Date(v.targetDate).toLocaleDateString(undefined, {
+              weekday: "short",
+              month: "short",
+              day: "numeric",
+            })}
+          </p>
+          {v.reason && <p className="text-xs italic text-ink-400">"{v.reason}"</p>}
+        </div>
+      </li>
+    ))}
+  </ul>
 )}
 ```
 
-(Preserve the exact surrounding JSX structure, class names, and any wrapping elements from the current block — only the field names `visitRequests`→`swapVisitors` and `v.sessionDate`→`v.targetDate` change, plus the `key` prop composition if it previously used `sessionDate`.)
+(Preserve every other line of the surrounding JSX, including the `<h2>`/`<p>` header above this block and the `<Card>` wrapper — only the two field names change: `visitRequests`→`swapVisitors` and `v.sessionDate`→`v.targetDate`. The `key` prop stays `v.id` — unchanged.)
 
 - [ ] **Step 2: Run the full client suite to confirm no regression**
 
