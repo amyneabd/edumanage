@@ -109,6 +109,9 @@ export interface PupilDetail {
   userId: string;
   name: string;
   email: string;
+  phone: string;
+  parentPhone: string;
+  parentName: string | null;
   status: UserStatus;
   classId: string | null;
   className: string | null;

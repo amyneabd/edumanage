@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../utils/prisma.js";
 import { hashPassword } from "../utils/password.js";
-import { getAttendanceCalendar, getOwnAttendanceCalendar, markAttendance } from "./attendance.service.js";
+import { getAttendanceCalendar, getOwnAttendanceCalendar, getPupilDetail, markAttendance } from "./attendance.service.js";
 import { addVacationSession, startVacation } from "./vacation.service.js";
 
 const TEST_EMAIL = `test-attendance-vacation-${Date.now()}@example.com`;
@@ -76,7 +76,14 @@ beforeAll(async () => {
       role: "PUPIL",
       status: "ACTIVE",
       pupilProfile: {
-        create: { requestedType: "MATH", teacherId, classId, parentCode: `PAV${Date.now()}` },
+        create: {
+          requestedType: "MATH",
+          teacherId,
+          classId,
+          parentCode: `PAV${Date.now()}`,
+          phone: "11112222",
+          parentPhone: "33334444",
+        },
       },
     },
   });
@@ -161,5 +168,64 @@ describe("markAttendance schedule restriction is period-relative", () => {
   it("still rejects an unscheduled day with no vacation session in the current period", async () => {
     const targetDate = unscheduledDateInMonth(0, 1);
     await expect(markAttendance(teacherId, pupilId, dateKey(targetDate), "PRESENT")).rejects.toThrow();
+  });
+});
+
+describe("getPupilDetail", () => {
+  it("returns the pupil's own and parent-supplied contact phone numbers", async () => {
+    const detail = await getPupilDetail(teacherId, pupilId);
+    expect(detail.phone).toBe("11112222");
+    expect(detail.parentPhone).toBe("33334444");
+  });
+
+  it("returns a null parentName when no ACTIVE ParentLink exists for this pupil", async () => {
+    const detail = await getPupilDetail(teacherId, pupilId);
+    expect(detail.parentName).toBeNull();
+  });
+
+  it("returns the linked parent's name once an ACTIVE ParentLink exists", async () => {
+    const passwordHash = await hashPassword("initial-Pass1");
+    const parent = await prisma.user.create({
+      data: {
+        email: `test-attendance-vacation-parent-${Date.now()}@example.com`,
+        passwordHash,
+        name: "Attendance Vacation Test Parent",
+        role: "PARENT",
+        status: "ACTIVE",
+        parentProfile: { create: {} },
+      },
+    });
+    const link = await prisma.parentLink.create({
+      data: { parentId: parent.id, pupilId, teacherId, status: "ACTIVE" },
+    });
+
+    const detail = await getPupilDetail(teacherId, pupilId);
+    expect(detail.parentName).toBe("Attendance Vacation Test Parent");
+
+    await prisma.parentLink.delete({ where: { id: link.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: parent.id } }).catch(() => {});
+  });
+
+  it("ignores a PENDING ParentLink when resolving the parent's name", async () => {
+    const passwordHash = await hashPassword("initial-Pass1");
+    const parent = await prisma.user.create({
+      data: {
+        email: `test-attendance-vacation-parent-pending-${Date.now()}@example.com`,
+        passwordHash,
+        name: "Pending Parent",
+        role: "PARENT",
+        status: "ACTIVE",
+        parentProfile: { create: {} },
+      },
+    });
+    const link = await prisma.parentLink.create({
+      data: { parentId: parent.id, pupilId, teacherId, status: "PENDING" },
+    });
+
+    const detail = await getPupilDetail(teacherId, pupilId);
+    expect(detail.parentName).toBeNull();
+
+    await prisma.parentLink.delete({ where: { id: link.id } }).catch(() => {});
+    await prisma.user.delete({ where: { id: parent.id } }).catch(() => {});
   });
 });

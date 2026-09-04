@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import clsx from "clsx";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronLeft, ChevronRight, User } from "lucide-react";
 import { clearAttendance, fetchAttendanceCalendar, fetchPupilDetail, fetchPupilPayments, markAttendance } from "../../api/teacher";
 import { Modal } from "../../components/Modal";
 import { ClassTypeBadge, PaymentBadge } from "../../components/Badge";
@@ -10,6 +10,7 @@ import { Button } from "../../components/Button";
 import { DAY_NAMES, currentPeriod, formatPeriodLabel, shiftPeriod } from "../../lib/period";
 import { formatCurrency } from "../../lib/currency";
 import { PupilLedgerModal } from "./PupilLedgerModal";
+import { PupilContactModal } from "./PupilContactModal";
 import type { AttendanceDay, AttendanceStatus } from "../../api/types";
 
 interface GridCell {
@@ -53,13 +54,17 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
   const queryClient = useQueryClient();
   const [period, setPeriod] = useState(currentPeriod());
   const [ledgerPupilId, setLedgerPupilId] = useState<string | null>(null);
+  const [contactOpen, setContactOpen] = useState(false);
 
   useEffect(() => {
     if (pupilId) setPeriod(currentPeriod());
   }, [pupilId]);
 
   useEffect(() => {
-    if (!pupilId) setLedgerPupilId(null);
+    if (!pupilId) {
+      setLedgerPupilId(null);
+      setContactOpen(false);
+    }
   }, [pupilId]);
 
   const detailQuery = useQuery({
@@ -125,13 +130,26 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
         <Spinner />
       ) : (
         <div>
-          <p className="text-sm text-ink-500">{pupil.email}</p>
-          {pupil.classId && (
-            <div className="mt-2 flex items-center gap-2">
-              {pupil.classType && <ClassTypeBadge type={pupil.classType} />}
-              <span className="text-sm text-ink-700">{pupil.className}</span>
+          <div className="flex items-start justify-between gap-3">
+            <div>
+              <p className="text-sm text-ink-500">{pupil.email}</p>
+              {pupil.classId && (
+                <div className="mt-2 flex items-center gap-2">
+                  {pupil.classType && <ClassTypeBadge type={pupil.classType} />}
+                  <span className="text-sm text-ink-700">{pupil.className}</span>
+                </div>
+              )}
             </div>
-          )}
+            <button
+              type="button"
+              onClick={() => setContactOpen(true)}
+              className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border-strong text-ink-500 hover:bg-canvas"
+              title="View contact info"
+              aria-label="View contact info"
+            >
+              <User className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+            </button>
+          </div>
 
           <div className="mt-5 flex items-center justify-between">
             <h3 className="text-sm font-medium text-ink-700">Attendance</h3>
@@ -278,6 +296,10 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
       pupilId={ledgerPupilId}
       pupilName={pupil?.name ?? null}
       onClose={() => setLedgerPupilId(null)}
+    />
+    <PupilContactModal
+      pupil={contactOpen ? (pupil ?? null) : null}
+      onClose={() => setContactOpen(false)}
     />
     </>
   );

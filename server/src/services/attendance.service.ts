@@ -23,12 +23,19 @@ async function getOwnedPupil(teacherId: string, pupilId: string) {
 
 export async function getPupilDetail(teacherId: string, pupilId: string) {
   const pupil = await getOwnedPupil(teacherId, pupilId);
+  // The parent's display name only comes from a linked (ACTIVE) parent
+  // account — a pending or rejected request shouldn't surface a name.
+  const parentLink = await prisma.parentLink.findFirst({
+    where: { pupilId, status: "ACTIVE" },
+    include: { parent: { include: { user: { select: { name: true } } } } },
+  });
   return {
     userId: pupil.userId,
     name: pupil.user.name,
     email: pupil.user.email,
     phone: pupil.phone,
     parentPhone: pupil.parentPhone,
+    parentName: parentLink?.parent.user.name ?? null,
     status: pupil.user.status,
     classId: pupil.classId,
     className: pupil.class?.name ?? null,
