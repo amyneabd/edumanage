@@ -13,7 +13,7 @@ export type NotificationType =
   | "POST_PUBLISHED"
   | "ABSENCE"
   | "SUBMISSION_MISSING";
-export type VisitRequestStatus = "PENDING" | "APPROVED" | "DECLINED";
+export type SwapRequestStatus = "PENDING" | "APPROVED" | "DECLINED";
 export type ParentLinkStatus = "PENDING" | "ACTIVE" | "REJECTED";
 
 export interface Me {
@@ -73,10 +73,10 @@ export interface PupilSummary {
   payments?: { status: PaymentStatus; dueDate: string | null; period: string }[];
 }
 
-export interface ClassVisitor {
+export interface ClassSwapVisitor {
   id: string;
   pupilId: string;
-  sessionDate: string;
+  targetDate: string;
   reason: string | null;
   pupil: { user: { name: string; email: string } };
 }
@@ -90,7 +90,7 @@ export interface ClassSummary {
   createdAt: string;
   pupils: PupilSummary[];
   scheduleSlots: ScheduleSlot[];
-  visitRequests?: ClassVisitor[];
+  swapVisitors?: ClassSwapVisitor[];
   _count?: { pupils: number };
 }
 
@@ -102,8 +102,8 @@ export interface PupilRequest {
   createdAt: string;
 }
 
-export type AttendanceStatus = "PRESENT" | "ABSENT";
-export type AttendanceDisplay = "FUTURE" | "TODAY" | "PRESENT" | "ABSENT" | "UNMARKED";
+export type AttendanceStatus = "PRESENT" | "ABSENT" | "EXCUSED";
+export type AttendanceDisplay = "FUTURE" | "TODAY" | "PRESENT" | "ABSENT" | "EXCUSED" | "UNMARKED";
 
 export interface PupilDetail {
   userId: string;
@@ -309,7 +309,7 @@ export interface AdminTeacherDetail {
   posts: Post[];
   attendance: AdminAttendanceOverview;
   pendingPupilRequests: number;
-  pendingVisitRequests: number;
+  pendingSwapRequests: number;
 }
 
 export interface NotificationItem {
@@ -411,31 +411,32 @@ export interface OtherClass {
   scheduleSlots: ScheduleSlot[];
 }
 
-export interface PupilVisitRequest {
+export interface PupilSwapRequest {
   id: string;
-  classId: string;
-  className: string;
-  classType: ClassType;
-  sessionDate: string;
+  originClassId: string;
+  originClassName: string;
+  originDate: string;
+  targetClassId: string;
+  targetClassName: string;
+  targetDate: string;
   reason: string | null;
-  status: VisitRequestStatus;
+  status: SwapRequestStatus;
   createdAt: string;
-  respondedAt: string | null;
 }
 
-export interface TeacherVisitRequest {
+export interface TeacherSwapRequest {
   id: string;
-  classId: string;
-  className: string;
-  classType: ClassType;
   pupilId: string;
   pupilName: string;
-  pupilEmail: string;
-  sessionDate: string;
+  originClassId: string;
+  originClassName: string;
+  originDate: string;
+  targetClassId: string;
+  targetClassName: string;
+  targetDate: string;
   reason: string | null;
-  status: VisitRequestStatus;
+  status: SwapRequestStatus;
   createdAt: string;
-  respondedAt: string | null;
 }
 
 export interface ParentChild {
