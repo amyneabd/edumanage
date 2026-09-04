@@ -1,16 +1,17 @@
 import type { Request, Response } from "express";
+import { z } from "zod";
 import { listPostsForClass, submitToExam, getOwnGrades, PostError } from "../services/post.service.js";
 import { AttendanceError, getOwnAttendanceCalendar } from "../services/attendance.service.js";
 import { PaymentError, getOwnPaymentHistory } from "../services/payment.service.js";
 import { PupilError, getHomeSnapshot, getPupilProfileWithClass } from "../services/pupil.service.js";
 import { getClassScheduleView } from "../services/vacation.service.js";
 import {
-  VisitError,
-  cancelVisitRequest,
-  createVisitRequest,
+  SwapError,
   listOtherClassesForPupil,
-  listOwnVisitRequests,
-} from "../services/visit.service.js";
+  createSwapRequest,
+  listOwnSwapRequests,
+  cancelSwapRequest,
+} from "../services/swap.service.js";
 import { saveFile } from "../utils/storage.js";
 
 export async function home(req: Request, res: Response) {
@@ -107,8 +108,8 @@ export async function submitExam(req: Request, res: Response) {
   }
 }
 
-function handleVisitError(err: unknown, res: Response) {
-  if (err instanceof VisitError) {
+function handleSwapError(err: unknown, res: Response) {
+  if (err instanceof SwapError) {
     res.status(err.status).json({ error: err.message });
     return true;
   }
@@ -120,50 +121,45 @@ export async function otherClassesHandler(req: Request, res: Response) {
     const classes = await listOtherClassesForPupil(req.user!.id);
     res.json(classes);
   } catch (err) {
-    if (!handleVisitError(err, res)) throw err;
+    if (!handleSwapError(err, res)) throw err;
   }
 }
 
-export async function listVisitRequestsHandler(req: Request, res: Response) {
-  const requests = await listOwnVisitRequests(req.user!.id);
-  res.json(
-    requests.map((r) => ({
-      id: r.id,
-      classId: r.classId,
-      className: r.class.name,
-      classType: r.class.type,
-      sessionDate: r.sessionDate,
-      reason: r.reason,
-      status: r.status,
-      createdAt: r.createdAt,
-      respondedAt: r.respondedAt,
-    }))
-  );
+export async function listSwapRequestsHandler(req: Request, res: Response) {
+  try {
+    const requests = await listOwnSwapRequests(req.user!.id);
+    res.json(requests);
+  } catch (err) {
+    if (!handleSwapError(err, res)) throw err;
+  }
 }
 
-export async function createVisitRequestHandler(req: Request, res: Response) {
-  const { classId, sessionDate, reason } = req.body ?? {};
-  if (typeof classId !== "string" || typeof sessionDate !== "string") {
-    res.status(400).json({ error: "classId and sessionDate are required" });
+const createSwapRequestSchema = z.object({
+  originDate: z.string().min(1),
+  targetClassId: z.string().min(1),
+  targetDate: z.string().min(1),
+  reason: z.string().optional(),
+});
+
+export async function createSwapRequestHandler(req: Request, res: Response) {
+  const parsed = createSwapRequestSchema.safeParse(req.body);
+  if (!parsed.success) {
+    res.status(400).json({ error: "Invalid request body." });
     return;
   }
   try {
-    const request = await createVisitRequest(req.user!.id, {
-      classId,
-      sessionDate,
-      reason: typeof reason === "string" ? reason : null,
-    });
+    const request = await createSwapRequest(req.user!.id, parsed.data);
     res.status(201).json(request);
   } catch (err) {
-    if (!handleVisitError(err, res)) throw err;
+    if (!handleSwapError(err, res)) throw err;
   }
 }
 
-export async function cancelVisitRequestHandler(req: Request, res: Response) {
+export async function cancelSwapRequestHandler(req: Request, res: Response) {
   try {
-    await cancelVisitRequest(req.user!.id, req.params.id as string);
+    await cancelSwapRequest(req.user!.id, req.params.id!);
     res.status(204).send();
   } catch (err) {
-    if (!handleVisitError(err, res)) throw err;
+    if (!handleSwapError(err, res)) throw err;
   }
 }

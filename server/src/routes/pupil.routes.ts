@@ -3,11 +3,11 @@ import { requireActive, requireAuth, requireEmailVerified, requireRole } from ".
 import { upload } from "../middleware/upload.middleware.js";
 import {
   attendanceCalendarHandler,
-  cancelVisitRequestHandler,
-  createVisitRequestHandler,
+  cancelSwapRequestHandler,
+  createSwapRequestHandler,
   gradesHandler,
   home,
-  listVisitRequestsHandler,
+  listSwapRequestsHandler,
   otherClassesHandler,
   paymentHistoryHandler,
   posts,
@@ -28,6 +28,6 @@ pupilRouter.get("/posts", posts);
 pupilRouter.post("/posts/:postId/submit", upload.single("file"), submitExam);
 
 pupilRouter.get("/classes/other", otherClassesHandler);
-pupilRouter.get("/visit-requests", listVisitRequestsHandler);
-pupilRouter.post("/visit-requests", createVisitRequestHandler);
-pupilRouter.delete("/visit-requests/:id", cancelVisitRequestHandler);
+pupilRouter.get("/swap-requests", listSwapRequestsHandler);
+pupilRouter.post("/swap-requests", createSwapRequestHandler);
+pupilRouter.delete("/swap-requests/:id", cancelSwapRequestHandler);
