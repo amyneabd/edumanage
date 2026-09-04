@@ -100,6 +100,28 @@ beforeEach(async () => {
   await prisma.attendanceRecord.deleteMany({ where: { pupilId } });
 });
 
+describe("getAttendanceCalendar", () => {
+  it("surfaces an EXCUSED record with display EXCUSED", async () => {
+    // Find a past Monday (the scheduled day for the test class)
+    let targetDate = daysFromNow(-1);
+    while (targetDate.getDay() !== 1) {
+      targetDate.setDate(targetDate.getDate() - 1);
+    }
+
+    await prisma.attendanceRecord.upsert({
+      where: { pupilId_date: { pupilId, date: targetDate } },
+      create: { pupilId, classId, date: targetDate, status: "EXCUSED" },
+      update: { status: "EXCUSED" },
+    });
+
+    const period = periodKey(targetDate);
+    const calendar = await getAttendanceCalendar(teacherId, pupilId, period);
+    const day = calendar.days.find((d) => d.date === dateKey(targetDate));
+    expect(day?.record).toBe("EXCUSED");
+    expect(day?.display).toBe("EXCUSED");
+  });
+});
+
 describe("getAttendanceCalendar with an active vacation period", () => {
   it("surfaces a vacation-day entry using the ad-hoc time even on an otherwise-unscheduled weekday", async () => {
     const targetDate = daysFromNow(unscheduledWeekdayOffset(1));

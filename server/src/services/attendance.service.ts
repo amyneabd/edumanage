@@ -58,8 +58,8 @@ type AttendanceCalendarDay = {
   dayOfWeek: number;
   startTime: string;
   endTime: string;
-  display: "FUTURE" | "TODAY" | "PRESENT" | "ABSENT" | "UNMARKED";
-  record: "PRESENT" | "ABSENT" | null;
+  display: "FUTURE" | "TODAY" | "PRESENT" | "ABSENT" | "EXCUSED" | "UNMARKED";
+  record: "PRESENT" | "ABSENT" | "EXCUSED" | null;
 };
 
 /**
@@ -115,13 +115,14 @@ async function buildAttendanceDays(
     const slot = vacationSlot ?? slotByDay.get(dayOfWeek) ?? { startTime: "", endTime: "" };
     const record = recordByKey.get(key) ?? null;
 
-    let display: "FUTURE" | "TODAY" | "PRESENT" | "ABSENT" | "UNMARKED";
+    let display: "FUTURE" | "TODAY" | "PRESENT" | "ABSENT" | "EXCUSED" | "UNMARKED";
     if (key === todayKey) {
       display = "TODAY";
     } else if (date > today) {
       display = "FUTURE";
     } else {
-      display = record === "PRESENT" ? "PRESENT" : record === "ABSENT" ? "ABSENT" : "UNMARKED";
+      display =
+        record === "PRESENT" ? "PRESENT" : record === "ABSENT" ? "ABSENT" : record === "EXCUSED" ? "EXCUSED" : "UNMARKED";
     }
 
     days.push({ date: key, dayOfWeek, startTime: slot.startTime, endTime: slot.endTime, display, record });
