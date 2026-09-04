@@ -6,7 +6,7 @@ import type {
   Post,
   PupilGrades,
   PupilHome,
-  PupilVisitRequest,
+  PupilSwapRequest,
   ScheduleViewResponse,
 } from "./types";
 
@@ -52,16 +52,21 @@ export async function fetchOtherClasses(): Promise<OtherClass[]> {
   return data;
 }
 
-export async function fetchOwnVisitRequests(): Promise<PupilVisitRequest[]> {
-  const { data } = await api.get("/pupil/visit-requests");
+export async function fetchOwnSwapRequests(): Promise<PupilSwapRequest[]> {
+  const { data } = await api.get("/pupil/swap-requests");
   return data;
 }
 
-export async function createVisitRequest(input: { classId: string; sessionDate: string; reason?: string }) {
-  const { data } = await api.post("/pupil/visit-requests", input);
+export async function createSwapRequest(input: {
+  originDate: string;
+  targetClassId: string;
+  targetDate: string;
+  reason?: string;
+}): Promise<PupilSwapRequest> {
+  const { data } = await api.post("/pupil/swap-requests", input);
   return data;
 }
 
-export async function cancelVisitRequest(id: string) {
-  await api.delete(`/pupil/visit-requests/${id}`);
+export async function cancelSwapRequest(id: string): Promise<void> {
+  await api.delete(`/pupil/swap-requests/${id}`);
 }
