@@ -1965,6 +1965,10 @@ git commit -m "refactor: rename admin teacher detail pendingVisitRequests to pen
 - Consumes: `AttendanceDisplay` widened to include `"EXCUSED"` (Task 9), returned in calendar day data from `attendance.service.ts` (Task 3).
 - Produces: no new exports — each file's `DISPLAY_STYLES`/`DISPLAY_LABELS` `Record<AttendanceDay["display"], string>` gains an `EXCUSED` key, satisfying TypeScript's exhaustiveness now that the union has 6 members instead of 5.
 
+**CORRECTION (post-Task-18-preflight-check):** The original code below was hallucinated — it used generic Tailwind palette names (`bg-slate-50`, `bg-rose-50`, `bg-emerald-50`, `bg-sky-50`) that appear nowhere in this codebase and don't match the real files' label text. This project defines its own design tokens as a Tailwind v4 `@theme` block in `client/src/index.css` (no `tailwind.config.js` exists) — there is no `sky` token at all. All three real files already render PRESENT/ABSENT/TODAY as solid `bg-<token>-600 text-white` "marked" cells; EXCUSED is likewise a marked/definite status, so it follows the same convention using the one unused semantic token pair, `warning-600`/`warning-700` (amber, distinct from success-green/danger-red/accent-blue).
+
+More significantly, the plan never mentioned it, but each file also has a `stats` useMemo (a plain if/else-if chain over `d.display`, not an exhaustive switch, so it silently drops `EXCUSED` days today) that feeds a **visible legend** of `<span>` dot+count entries below the calendar grid. `DISPLAY_LABELS[...]` is used only inside `title=`/`aria-label=` attributes on calendar cells, never as visible text content — so this task's own Step-1 test (`screen.getByText(/excused/i)`) cannot pass without also adding an `excused` counter to `stats` and a corresponding visible legend entry. The corrected steps below add both. Pupil's and parent's `stats` also compute `rate = marked > 0 ? round(present/marked*100) : null` where `marked = present + absent` — this stays unchanged so `EXCUSED` days are deliberately excluded from the attendance-rate denominator, consistent with Tasks 3/4's precedent that `EXCUSED` must not count as an absence.
+
 - [ ] **Step 1: Write the failing test**
 
 Check whether `client/src/features/teacher/PupilDetailModal.test.tsx` exists. If it does not, create it with a focused test, modeled on the `vi.hoisted`/`vi.mock`/`renderWithClient` pattern from `VacationSessionsPanel.test.tsx`:
@@ -2015,31 +2019,144 @@ Expected: FAIL — either a TypeScript error (the `DISPLAY_STYLES`/`DISPLAY_LABE
 
 - [ ] **Step 3: Update the implementations**
 
-In `client/src/features/teacher/PupilDetailModal.tsx`, add an `EXCUSED` entry to `DISPLAY_STYLES` (currently lines 37-43) and `DISPLAY_LABELS` (currently lines 45-51):
+In `client/src/features/teacher/PupilDetailModal.tsx`, replace the real, current `DISPLAY_STYLES` (lines 37-43) and `DISPLAY_LABELS` (lines 45-51) with:
 
 ```typescript
 const DISPLAY_STYLES: Record<AttendanceDay["display"], string> = {
-  FUTURE: "bg-slate-50 text-slate-400",
-  TODAY: "bg-accent-50 text-accent-700 ring-2 ring-accent-400",
-  PRESENT: "bg-emerald-50 text-emerald-700",
-  ABSENT: "bg-rose-50 text-rose-700",
-  EXCUSED: "bg-sky-50 text-sky-700",
-  UNMARKED: "bg-white text-slate-500",
+  FUTURE: "bg-canvas text-ink-400",
+  TODAY: "bg-accent-600 text-white ring-2 ring-accent-100",
+  PRESENT: "bg-success-600 text-white hover:bg-success-700",
+  ABSENT: "bg-danger-600 text-white hover:bg-danger-700",
+  EXCUSED: "bg-warning-600 text-white hover:bg-warning-700",
+  UNMARKED: "border-2 border-dashed border-border-strong text-ink-500 hover:border-accent-600 hover:text-accent-600",
 };
 
 const DISPLAY_LABELS: Record<AttendanceDay["display"], string> = {
-  FUTURE: "Upcoming",
-  TODAY: "Today",
+  FUTURE: "Upcoming session",
+  TODAY: "Today's session",
   PRESENT: "Present",
   ABSENT: "Absent",
   EXCUSED: "Excused",
-  UNMARKED: "Unmarked",
+  UNMARKED: "Not marked yet — click to record",
 };
 ```
 
-(Preserve the exact existing values for the other 5 keys — read the file first to copy them verbatim; only the `EXCUSED` entries are new. Do not modify `handleDayClick`, which stays unchanged since `EXCUSED` is never teacher-clickable.)
+(Only the `EXCUSED` line is new in each Record; every other key's value is copied verbatim from the real file. Do not modify `handleDayClick`, which stays unchanged since `EXCUSED` is never teacher-clickable.)
 
-Apply the identical `EXCUSED` addition to `client/src/features/pupil/AttendancePage.tsx`'s `DISPLAY_STYLES`/`DISPLAY_LABELS` (currently lines 33-47) and `client/src/features/parent/AttendancePage.tsx`'s `DISPLAY_STYLES`/`DISPLAY_LABELS` (currently lines 35-49), preserving each file's exact existing values for the other keys and each file's own `EXCUSED` color choice consistent with the teacher modal's (`bg-sky-50 text-sky-700`) for visual consistency.
+Next, in the same file, update the `stats` useMemo (currently lines 103-115) to add an `excused` counter:
+
+```typescript
+const stats = useMemo(() => {
+  let present = 0;
+  let absent = 0;
+  let excused = 0;
+  let upcoming = 0;
+  let unmarked = 0;
+  for (const d of days) {
+    if (d.display === "PRESENT") present++;
+    else if (d.display === "ABSENT") absent++;
+    else if (d.display === "EXCUSED") excused++;
+    else if (d.display === "FUTURE") upcoming++;
+    else if (d.display === "UNMARKED") unmarked++;
+  }
+  return { present, absent, excused, upcoming, unmarked };
+}, [days]);
+```
+
+Then, in the legend section below the calendar grid (currently lines 226-242), insert a new "Excused" entry between the existing "Absent" and "Not marked" spans:
+
+```tsx
+<div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-ink-500">
+  <span className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full bg-success-600" /> Present ({stats.present})
+  </span>
+  <span className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full bg-danger-600" /> Absent ({stats.absent})
+  </span>
+  <span className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full bg-warning-600" /> Excused ({stats.excused})
+  </span>
+  <span className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full border-2 border-dashed border-border-strong" /> Not marked ({stats.unmarked})
+  </span>
+  <span className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full bg-border" /> Upcoming ({stats.upcoming})
+  </span>
+  <span className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full bg-accent-600" /> Today
+  </span>
+</div>
+```
+
+(Preserve the surrounding `<p className="mt-3 text-[11px] text-ink-400">...</p>` line below this block unchanged.)
+
+Apply the equivalent changes to `client/src/features/pupil/AttendancePage.tsx` (`DISPLAY_STYLES`/`DISPLAY_LABELS` currently lines 33-39/41-47, `stats` useMemo currently lines 60-74, legend currently lines 161-178) and to `client/src/features/parent/AttendancePage.tsx` (`DISPLAY_STYLES`/`DISPLAY_LABELS` currently lines 35-41/43-49, `stats` useMemo currently lines 64-78, legend currently lines 177-194) — both files are byte-identical to each other in these blocks, and differ from the teacher file only in lacking `hover:` variants and in the `UNMARKED` label text ("Not marked yet", not "— click to record"):
+
+```typescript
+const DISPLAY_STYLES: Record<AttendanceDay["display"], string> = {
+  FUTURE: "bg-canvas text-ink-400",
+  TODAY: "bg-accent-600 text-white ring-2 ring-accent-100",
+  PRESENT: "bg-success-600 text-white",
+  ABSENT: "bg-danger-600 text-white",
+  EXCUSED: "bg-warning-600 text-white",
+  UNMARKED: "border-2 border-dashed border-border-strong text-ink-500",
+};
+
+const DISPLAY_LABELS: Record<AttendanceDay["display"], string> = {
+  FUTURE: "Upcoming session",
+  TODAY: "Today's session",
+  PRESENT: "Present",
+  ABSENT: "Absent",
+  EXCUSED: "Excused",
+  UNMARKED: "Not marked yet",
+};
+```
+
+```typescript
+const stats = useMemo(() => {
+  let present = 0;
+  let absent = 0;
+  let excused = 0;
+  let upcoming = 0;
+  let unmarked = 0;
+  for (const d of days) {
+    if (d.display === "PRESENT") present++;
+    else if (d.display === "ABSENT") absent++;
+    else if (d.display === "EXCUSED") excused++;
+    else if (d.display === "FUTURE") upcoming++;
+    else if (d.display === "UNMARKED") unmarked++;
+  }
+  const marked = present + absent;
+  const rate = marked > 0 ? Math.round((present / marked) * 100) : null;
+  return { present, absent, excused, upcoming, unmarked, rate };
+}, [days]);
+```
+
+(`marked`/`rate` stay computed from `present + absent` only — `excused` is deliberately excluded from the attendance-rate denominator, consistent with Tasks 3/4's precedent that `EXCUSED` must not count as an absence.)
+
+```tsx
+<div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-ink-500">
+  <span className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full bg-success-600" /> Present ({stats.present})
+  </span>
+  <span className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full bg-danger-600" /> Absent ({stats.absent})
+  </span>
+  <span className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full bg-warning-600" /> Excused ({stats.excused})
+  </span>
+  <span className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full border-2 border-dashed border-border-strong" /> Not marked (
+    {stats.unmarked})
+  </span>
+  <span className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full bg-border-strong" /> Upcoming ({stats.upcoming})
+  </span>
+  <span className="flex items-center gap-1.5">
+    <span className="h-2.5 w-2.5 rounded-full bg-accent-600" /> Today
+  </span>
+</div>
+```
 
 - [ ] **Step 4: Run test to verify it passes**
 
