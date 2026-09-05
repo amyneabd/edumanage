@@ -13,7 +13,11 @@ export function shiftPeriod(period: string, delta: number): string {
 export function formatPeriodLabel(period: string): string {
   const [year, month] = period.split("-").map(Number);
   const d = new Date(year!, month! - 1, 1);
-  return d.toLocaleDateString(undefined, { month: "long", year: "numeric" });
+  return d.toLocaleDateString("fr-FR", { month: "long", year: "numeric" });
 }
 
-export const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+export function formatDate(value: string | Date, options?: Intl.DateTimeFormatOptions): string {
+  return new Date(value).toLocaleDateString("fr-FR", options);
+}
+
+export const DAY_NAMES = ["Dim", "Lun", "Mar", "Mer", "Jeu", "Ven", "Sam"];
