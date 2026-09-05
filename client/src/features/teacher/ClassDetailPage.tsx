@@ -389,13 +389,13 @@ export function ClassDetailPage() {
       <Card className="mt-6 p-5">
         <h2 className="text-sm font-medium text-ink-700">Upcoming visitors</h2>
         <p className="mt-1 text-xs text-ink-400">Pupils approved to sit in on a future session of this class.</p>
-        {(klass.visitRequests?.length ?? 0) === 0 ? (
+        {(klass.swapVisitors?.length ?? 0) === 0 ? (
           <div className="mt-3">
             <EmptyState title="No upcoming visitors" description="Approved one-off session requests will show here." />
           </div>
         ) : (
           <ul className="mt-3 divide-y divide-border">
-            {klass.visitRequests!.map((v) => (
+            {klass.swapVisitors!.map((v) => (
               <li key={v.id} className="flex flex-wrap items-center justify-between gap-2 py-2.5">
                 <div>
                   <p className="text-sm font-medium text-ink-900">{v.pupil.user.name}</p>
@@ -403,7 +403,7 @@ export function ClassDetailPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-ink-700">
-                    {new Date(v.sessionDate).toLocaleDateString(undefined, {
+                    {new Date(v.targetDate).toLocaleDateString(undefined, {
                       weekday: "short",
                       month: "short",
                       day: "numeric",
