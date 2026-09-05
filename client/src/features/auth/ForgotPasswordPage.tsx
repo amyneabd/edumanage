@@ -13,7 +13,7 @@ import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { forgotPasswordSchema, type ForgotPasswordFormValues } from "../../lib/authSchemas";
 
 export function ForgotPasswordPage() {
-  useDocumentTitle("Reset your password");
+  useDocumentTitle("Réinitialiser votre mot de passe");
 
   const {
     register,
@@ -36,11 +36,11 @@ export function ForgotPasswordPage() {
           <Logo className="h-10 w-10" />
           {mutation.isSuccess ? (
             <>
-              <h1 className="mt-6 text-2xl font-bold text-ink-900">Check your email</h1>
+              <h1 className="mt-6 text-2xl font-bold text-ink-900">Vérifiez votre e-mail</h1>
               <p className="mt-2 text-sm text-ink-500">{mutation.data.message}</p>
               {mutation.data.devResetUrl && (
                 <div className="mt-4 rounded-sm border border-dashed border-border-strong bg-canvas p-3 text-xs text-ink-700">
-                  <p className="font-medium text-ink-900">Dev mode — no SMTP configured</p>
+                  <p className="font-medium text-ink-900">Mode développement — SMTP non configuré</p>
                   <Link
                     to={mutation.data.devResetUrl.replace(window.location.origin, "")}
                     className="focus-ring mt-1 block break-all rounded-sm font-mono text-[11px] text-accent-600 underline underline-offset-2"
@@ -53,20 +53,20 @@ export function ForgotPasswordPage() {
                 to="/login"
                 className="focus-ring mt-6 block rounded-sm text-center text-sm font-medium text-accent-600 hover:text-accent-700"
               >
-                Back to sign in
+                Retour à la connexion
               </Link>
             </>
           ) : (
             <>
-              <h1 className="mt-6 text-2xl font-bold text-ink-900">Forgot your password?</h1>
+              <h1 className="mt-6 text-2xl font-bold text-ink-900">Mot de passe oublié ?</h1>
               <p className="mt-1 text-sm text-ink-500">
-                Enter your email and we'll send you a link to reset it.
+                Entrez votre e-mail et nous vous enverrons un lien pour le réinitialiser.
               </p>
 
               <form className="mt-5 space-y-4" onSubmit={handleSubmit((values) => mutation.mutate(values))} noValidate>
                 <div>
                   <label htmlFor="forgot-email" className="text-sm font-medium text-ink-700">
-                    Email
+                    E-mail
                   </label>
                   <Input
                     id="forgot-email"
@@ -81,14 +81,14 @@ export function ForgotPasswordPage() {
                 {mutation.isError && <ErrorState message={extractErrorMessage(mutation.error)} />}
 
                 <Button type="submit" className="w-full" disabled={mutation.isPending}>
-                  {mutation.isPending ? "Sending…" : "Send reset link"}
+                  {mutation.isPending ? "Envoi…" : "Envoyer le lien de réinitialisation"}
                 </Button>
               </form>
 
               <p className="mt-6 text-center text-sm text-ink-500">
-                Remembered it?{" "}
+                Vous vous en souvenez ?{" "}
                 <Link to="/login" className="focus-ring rounded-sm font-medium text-accent-600 hover:text-accent-700">
-                  Sign in
+                  Se connecter
                 </Link>
               </p>
             </>

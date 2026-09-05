@@ -12,12 +12,13 @@ import { Input } from "../../components/Input";
 import { Logo } from "../../components/Logo";
 import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { registerSchema, type RegisterFormValues } from "../../lib/authSchemas";
+import { CLASS_TYPE_LABELS } from "../../lib/labels";
 import type { ClassType } from "../../api/types";
 
 const CLASS_TYPES: ClassType[] = ["SCIENCE", "MATH", "INFO", "ECO"];
 
 export function RegisterPage() {
-  useDocumentTitle("Create account");
+  useDocumentTitle("Créer un compte");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -62,10 +63,10 @@ export function RegisterPage() {
       <div className="flex w-full flex-col justify-center px-6 py-12 sm:px-12 lg:w-1/2 lg:px-20">
         <div className="mx-auto w-full max-w-sm">
           <Logo className="h-10 w-10" />
-          <h1 className="mt-6 text-2xl font-bold text-ink-900">Create your account</h1>
-          <p className="mt-1 text-sm text-ink-500">Choose the account type that fits you.</p>
+          <h1 className="mt-6 text-2xl font-bold text-ink-900">Créez votre compte</h1>
+          <p className="mt-1 text-sm text-ink-500">Choisissez le type de compte qui vous convient.</p>
 
-          <div role="radiogroup" aria-label="Account type" className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
+          <div role="radiogroup" aria-label="Type de compte" className="mt-5 grid grid-cols-1 gap-2 sm:grid-cols-3">
             {(["PUPIL", "TEACHER", "PARENT"] as const).map((r) => (
               <button
                 key={r}
@@ -80,7 +81,7 @@ export function RegisterPage() {
                     : "border-border-strong text-ink-700 hover:bg-canvas"
                 )}
               >
-                {r === "PUPIL" ? "Pupil" : r === "TEACHER" ? "Teacher" : "Parent"}
+                {r === "PUPIL" ? "Élève" : r === "TEACHER" ? "Enseignant" : "Parent"}
               </button>
             ))}
           </div>
@@ -88,7 +89,7 @@ export function RegisterPage() {
           <form className="mt-5 space-y-4" onSubmit={handleSubmit((values) => mutation.mutate(values))} noValidate>
             <div>
               <label htmlFor="register-name" className="text-sm font-medium text-ink-700">
-                Full name <span className="text-danger-600" aria-hidden="true">*</span>
+                Nom complet <span className="text-danger-600" aria-hidden="true">*</span>
               </label>
               <Input
                 id="register-name"
@@ -102,7 +103,7 @@ export function RegisterPage() {
             </div>
             <div>
               <label htmlFor="register-email" className="text-sm font-medium text-ink-700">
-                Email <span className="text-danger-600" aria-hidden="true">*</span>
+                E-mail <span className="text-danger-600" aria-hidden="true">*</span>
               </label>
               <Input
                 id="register-email"
@@ -117,7 +118,7 @@ export function RegisterPage() {
             </div>
             <div>
               <label htmlFor="register-password" className="text-sm font-medium text-ink-700">
-                Password <span className="text-danger-600" aria-hidden="true">*</span>
+                Mot de passe <span className="text-danger-600" aria-hidden="true">*</span>
               </label>
               <Input
                 id="register-password"
@@ -132,7 +133,7 @@ export function RegisterPage() {
             </div>
             <div>
               <label htmlFor="register-confirm-password" className="text-sm font-medium text-ink-700">
-                Confirm password <span className="text-danger-600" aria-hidden="true">*</span>
+                Confirmer le mot de passe <span className="text-danger-600" aria-hidden="true">*</span>
               </label>
               <Input
                 id="register-confirm-password"
@@ -150,7 +151,7 @@ export function RegisterPage() {
               <>
                 <div>
                   <label htmlFor="register-class-type" className="text-sm font-medium text-ink-700">
-                    Class type
+                    Type de classe
                   </label>
                   <select
                     id="register-class-type"
@@ -159,18 +160,18 @@ export function RegisterPage() {
                   >
                     {CLASS_TYPES.map((t) => (
                       <option key={t} value={t}>
-                        {t}
+                        {CLASS_TYPE_LABELS[t]}
                       </option>
                     ))}
                   </select>
                 </div>
                 <div>
                   <label htmlFor="register-teacher-code" className="text-sm font-medium text-ink-700">
-                    Teacher ID <span className="text-danger-600" aria-hidden="true">*</span>
+                    Identifiant enseignant <span className="text-danger-600" aria-hidden="true">*</span>
                   </label>
                   <Input
                     id="register-teacher-code"
-                    placeholder="e.g. PFBV9U"
+                    placeholder="ex. PFBV9U"
                     required
                     aria-required="true"
                     invalid={Boolean(pupilErrors.teacherCode)}
@@ -179,13 +180,13 @@ export function RegisterPage() {
                     className="font-mono uppercase tracking-wider"
                   />
                   <p id="register-teacher-code-hint" className="mt-1 text-xs text-ink-400">
-                    Ask your teacher for their Teacher ID.
+                    Demandez à votre enseignant son identifiant enseignant.
                   </p>
                   <FieldError id="register-teacher-code-error" message={pupilErrors.teacherCode?.message} />
                 </div>
                 <div>
                   <label htmlFor="register-phone" className="text-sm font-medium text-ink-700">
-                    Phone number <span className="text-danger-600" aria-hidden="true">*</span>
+                    Numéro de téléphone <span className="text-danger-600" aria-hidden="true">*</span>
                   </label>
                   <Input
                     id="register-phone"
@@ -200,7 +201,7 @@ export function RegisterPage() {
                 </div>
                 <div>
                   <label htmlFor="register-parent-phone" className="text-sm font-medium text-ink-700">
-                    Parent's phone number <span className="text-danger-600" aria-hidden="true">*</span>
+                    Numéro de téléphone du parent <span className="text-danger-600" aria-hidden="true">*</span>
                   </label>
                   <Input
                     id="register-parent-phone"
@@ -219,14 +220,14 @@ export function RegisterPage() {
             {mutation.isError && <ErrorState message={extractErrorMessage(mutation.error)} />}
 
             <Button type="submit" className="w-full" disabled={mutation.isPending}>
-              {mutation.isPending ? "Creating account…" : "Create account"}
+              {mutation.isPending ? "Création du compte…" : "Créer un compte"}
             </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-ink-500">
-            Already have an account?{" "}
+            Vous avez déjà un compte ?{" "}
             <Link to="/login" className="focus-ring rounded-sm font-medium text-accent-600 hover:text-accent-700">
-              Sign in
+              Se connecter
             </Link>
           </p>
         </div>

@@ -13,7 +13,7 @@ import { useDocumentTitle } from "../../hooks/useDocumentTitle";
 import { resetPasswordSchema, type ResetPasswordFormValues } from "../../lib/authSchemas";
 
 export function ResetPasswordPage() {
-  useDocumentTitle("Set a new password");
+  useDocumentTitle("Définir un nouveau mot de passe");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const token = searchParams.get("token") ?? "";
@@ -41,13 +41,13 @@ export function ResetPasswordPage() {
         <div className="flex w-full flex-col justify-center px-6 py-12 sm:px-12 lg:w-1/2 lg:px-20">
           <div className="mx-auto w-full max-w-sm text-center">
             <Logo className="mx-auto h-10 w-10" />
-            <h1 className="mt-6 text-2xl font-bold text-danger-600">Invalid reset link</h1>
-            <p className="mt-2 text-sm text-ink-500">This password reset link is missing its token.</p>
+            <h1 className="mt-6 text-2xl font-bold text-danger-600">Lien de réinitialisation invalide</h1>
+            <p className="mt-2 text-sm text-ink-500">Ce lien de réinitialisation du mot de passe ne contient pas de jeton.</p>
             <Link
               to="/forgot-password"
               className="focus-ring mt-6 block rounded-sm text-sm font-medium text-accent-600 hover:text-accent-700"
             >
-              Request a new link
+              Demander un nouveau lien
             </Link>
           </div>
         </div>
@@ -61,13 +61,13 @@ export function ResetPasswordPage() {
       <div className="flex w-full flex-col justify-center px-6 py-12 sm:px-12 lg:w-1/2 lg:px-20">
         <div className="mx-auto w-full max-w-sm">
           <Logo className="h-10 w-10" />
-          <h1 className="mt-6 text-2xl font-bold text-ink-900">Set a new password</h1>
-          <p className="mt-1 text-sm text-ink-500">Choose a new password for your account.</p>
+          <h1 className="mt-6 text-2xl font-bold text-ink-900">Définir un nouveau mot de passe</h1>
+          <p className="mt-1 text-sm text-ink-500">Choisissez un nouveau mot de passe pour votre compte.</p>
 
           <form className="mt-5 space-y-4" onSubmit={handleSubmit((values) => mutation.mutate(values))} noValidate>
             <div>
               <label htmlFor="reset-password" className="text-sm font-medium text-ink-700">
-                New password <span className="text-danger-600" aria-hidden="true">*</span>
+                Nouveau mot de passe <span className="text-danger-600" aria-hidden="true">*</span>
               </label>
               <Input
                 id="reset-password"
@@ -82,7 +82,7 @@ export function ResetPasswordPage() {
             </div>
             <div>
               <label htmlFor="reset-confirm-password" className="text-sm font-medium text-ink-700">
-                Confirm new password <span className="text-danger-600" aria-hidden="true">*</span>
+                Confirmer le nouveau mot de passe <span className="text-danger-600" aria-hidden="true">*</span>
               </label>
               <Input
                 id="reset-confirm-password"
@@ -99,7 +99,7 @@ export function ResetPasswordPage() {
             {mutation.isError && <ErrorState message={extractErrorMessage(mutation.error)} />}
 
             <Button type="submit" className="w-full" disabled={mutation.isPending}>
-              {mutation.isPending ? "Resetting…" : "Reset password"}
+              {mutation.isPending ? "Réinitialisation…" : "Réinitialiser le mot de passe"}
             </Button>
           </form>
         </div>

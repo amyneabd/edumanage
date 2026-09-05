@@ -8,7 +8,7 @@ import { Button } from "../../components/Button";
 import { Logo } from "../../components/Logo";
 
 export function PendingPage() {
-  useDocumentTitle("Pending approval");
+  useDocumentTitle("En attente d'approbation");
   const { user, refetch } = useAuth();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -40,24 +40,24 @@ export function PendingPage() {
           <Logo className="mx-auto h-10 w-10" />
           {rejected ? (
             <>
-              <h1 className="mt-6 text-2xl font-bold text-danger-600">Request not approved</h1>
+              <h1 className="mt-6 text-2xl font-bold text-danger-600">Demande non approuvée</h1>
               <p className="mt-2 text-sm text-ink-500">
-                Your account request was declined. Please contact
-                {user?.role === "TEACHER" ? " the site admin" : " your teacher"} for details.
+                Votre demande de compte a été refusée. Veuillez contacter
+                {user?.role === "TEACHER" ? " l'administrateur du site" : " votre enseignant"} pour plus de détails.
               </p>
             </>
           ) : (
             <>
-              <h1 className="mt-6 text-2xl font-bold text-ink-900">Waiting for approval</h1>
+              <h1 className="mt-6 text-2xl font-bold text-ink-900">En attente d'approbation</h1>
               <p className="mt-2 text-sm text-ink-500">
                 {user?.role === "TEACHER"
-                  ? "An admin needs to approve your teacher account before you can sign in."
-                  : "Your teacher needs to accept your request and assign you to a class."}
+                  ? "Un administrateur doit approuver votre compte enseignant avant que vous puissiez vous connecter."
+                  : "Votre enseignant doit accepter votre demande et vous affecter à une classe."}
               </p>
             </>
           )}
           <Button variant="secondary" className="mt-6" onClick={() => logoutMutation.mutate()}>
-            Log out
+            Se déconnecter
           </Button>
         </div>
       </div>

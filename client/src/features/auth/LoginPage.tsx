@@ -15,7 +15,7 @@ import { loginSchema, type LoginFormValues } from "../../lib/authSchemas";
 import type { Me } from "../../api/types";
 
 export function LoginPage() {
-  useDocumentTitle("Sign in");
+  useDocumentTitle("Connexion");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -43,13 +43,13 @@ export function LoginPage() {
       <div className="flex w-full flex-col justify-center px-6 py-12 sm:px-12 lg:w-1/2 lg:px-20">
         <div className="mx-auto w-full max-w-sm">
           <Logo className="h-10 w-10" />
-          <h1 className="mt-6 text-2xl font-bold text-ink-900">Sign in to EduManage</h1>
-          <p className="mt-1 text-sm text-ink-500">Teachers and pupils, in one place.</p>
+          <h1 className="mt-6 text-2xl font-bold text-ink-900">Connexion à EduManage</h1>
+          <p className="mt-1 text-sm text-ink-500">Enseignants et élèves, réunis au même endroit.</p>
 
           <form className="mt-6 space-y-4" onSubmit={handleSubmit((values) => mutation.mutate(values))} noValidate>
             <div>
               <label htmlFor="login-email" className="text-sm font-medium text-ink-700">
-                Email <span className="text-danger-600" aria-hidden="true">*</span>
+                E-mail <span className="text-danger-600" aria-hidden="true">*</span>
               </label>
               <Input
                 id="login-email"
@@ -65,13 +65,13 @@ export function LoginPage() {
             <div>
               <div className="flex items-center justify-between">
                 <label htmlFor="login-password" className="text-sm font-medium text-ink-700">
-                  Password <span className="text-danger-600" aria-hidden="true">*</span>
+                  Mot de passe <span className="text-danger-600" aria-hidden="true">*</span>
                 </label>
                 <Link
                   to="/forgot-password"
                   className="focus-ring rounded-sm text-xs font-medium text-accent-600 hover:text-accent-700"
                 >
-                  Forgot password?
+                  Mot de passe oublié ?
                 </Link>
               </div>
               <Input
@@ -89,14 +89,14 @@ export function LoginPage() {
             {mutation.isError && <ErrorState message={extractErrorMessage(mutation.error)} />}
 
             <Button type="submit" className="w-full" disabled={mutation.isPending}>
-              {mutation.isPending ? "Signing in…" : "Sign in"}
+              {mutation.isPending ? "Connexion…" : "Se connecter"}
             </Button>
           </form>
 
           <p className="mt-6 text-center text-sm text-ink-500">
-            No account?{" "}
+            Vous n'avez pas de compte ?{" "}
             <Link to="/register" className="focus-ring rounded-sm font-medium text-accent-600 hover:text-accent-700">
-              Register
+              S'inscrire
             </Link>
           </p>
         </div>
