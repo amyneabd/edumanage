@@ -1557,121 +1557,203 @@ Expected: FAIL — `PupilSchedulePage` doesn't yet render the new dual-date form
 
 - [ ] **Step 3: Rewrite the implementation**
 
+**CORRECTION (post-Task-14-preflight-check):** The original code blocks below (both `SwapRequestForm` and the described `MyVisitRequests`/`MySwapRequests` replacement) were a hallucination — they invented a raw-Tailwind visual style (`text-slate-700`, `border-slate-300`, `bg-accent-600`, `text-rose-600`, unstyled `<button>`) and a bespoke local `error` string dropped from `mutation.onError`, none of which exist anywhere in this codebase. Verified the real current `client/src/features/pupil/SchedulePage.tsx` in full: it uses this repo's actual design system throughout — `Button` (`../../components/Button`), `EmptyState`/`ErrorState`/`Spinner` (`../../components/Feedback`), `Card` (already wrapping both panels in `PupilSchedulePage`, untouched by this task), the design tokens `text-ink-700`/`text-ink-400`/`text-ink-500`/`text-ink-900`/`border-border-strong`/`focus-ring`/`danger-600`, `toast.success(...)` from `sonner` on successful submission, and `extractErrorMessage(mutation.error)` passed to `ErrorState` for the inline error banner (driven by `mutation.isError`, not a separate local error string). This matches the spec (`docs/superpowers/specs/2026-09-04-swap-request-design.md:167`), which explicitly says the new origin-date field is "consistent with how the pupil already understands their own schedule" and that an invalid pick "surfaces **the same inline error the old form used**" — i.e. reuse `ErrorState`/`extractErrorMessage`/`mutation.isError`, not a new mechanism. The blocks below are corrected to reuse the real design system and error-handling pattern; only the field shape (origin+target instead of single class+date) and copy actually change. `ClassTypeBadge` is dropped from the import list — `PupilSwapRequest` (Task 9) has no `classType` field, and this project's `tsconfig.json` has `noUnusedLocals: true`, so an unused import would fail the build.
+
 In `client/src/features/pupil/SchedulePage.tsx`, replace `VisitRequestForm` (currently lines 23-124) with an exported `SwapRequestForm`:
 
 ```typescript
 export function SwapRequestForm() {
   const queryClient = useQueryClient();
+  const otherClassesQuery = useQuery({ queryKey: ["pupil", "other-classes"], queryFn: fetchOtherClasses });
   const [originDate, setOriginDate] = useState("");
   const [targetClassId, setTargetClassId] = useState("");
   const [targetDate, setTargetDate] = useState("");
   const [reason, setReason] = useState("");
-  const [error, setError] = useState<string | null>(null);
 
-  const classesQuery = useQuery({ queryKey: ["other-classes"], queryFn: fetchOtherClasses });
+  const classes = otherClassesQuery.data ?? [];
+  const activeClassId = targetClassId || classes[0]?.id || "";
+  const selectedClass = classes.find((c) => c.id === activeClassId);
 
   const mutation = useMutation({
     mutationFn: () =>
       createSwapRequest({
         originDate,
-        targetClassId,
+        targetClassId: activeClassId,
         targetDate,
-        reason: reason || undefined,
+        reason: reason.trim() || undefined,
       }),
     onSuccess: () => {
+      toast.success("Swap request sent.");
       setOriginDate("");
-      setTargetClassId("");
       setTargetDate("");
       setReason("");
-      setError(null);
-      queryClient.invalidateQueries({ queryKey: ["own-swap-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["pupil", "swap-requests"] });
     },
-    onError: (err: Error) => setError(err.message),
   });
+
+  if (otherClassesQuery.isLoading) return <Spinner />;
+
+  if (classes.length === 0) {
+    return (
+      <EmptyState
+        title="No other classes to join"
+        description="Your teacher only has the class you're already enrolled in."
+      />
+    );
+  }
 
   return (
     <form
-      className="space-y-4"
+      className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault();
+        if (!originDate || !activeClassId || !targetDate) return;
         mutation.mutate();
       }}
     >
       <div>
-        <label htmlFor="origin-date" className="block text-sm font-medium text-slate-700">
-          Session you'll miss
-        </label>
+        <label htmlFor="swap-request-origin-date" className="text-sm font-medium text-ink-700">Session you'll miss</label>
         <input
-          id="origin-date"
+          id="swap-request-origin-date"
+          required
+          aria-required="true"
           type="date"
+          min={todayIso()}
           value={originDate}
           onChange={(e) => setOriginDate(e.target.value)}
-          className="mt-1 block w-full rounded-md border-slate-300"
-          required
+          className="mt-1 w-full rounded-sm border border-border-strong px-3 py-2 text-sm focus-ring"
         />
       </div>
+
       <div>
-        <label htmlFor="target-class" className="block text-sm font-medium text-slate-700">
-          Class to join
-        </label>
+        <label htmlFor="swap-request-target-class" className="text-sm font-medium text-ink-700">Class to join</label>
         <select
-          id="target-class"
-          value={targetClassId}
+          id="swap-request-target-class"
+          value={activeClassId}
           onChange={(e) => setTargetClassId(e.target.value)}
-          className="mt-1 block w-full rounded-md border-slate-300"
-          required
+          className="mt-1 w-full rounded-sm border border-border-strong px-3 py-2 text-sm focus-ring"
         >
-          <option value="">Select a class</option>
-          {classesQuery.data?.map((c) => (
+          {classes.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.name}
+              {c.name} ({c.type})
             </option>
           ))}
         </select>
+        {selectedClass && (
+          <p className="mt-1 text-xs text-ink-400">
+            {selectedClass.scheduleSlots.length === 0
+              ? "No schedule set for this class yet."
+              : `Meets: ${selectedClass.scheduleSlots
+                  .slice()
+                  .sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime))
+                  .map((s) => `${DAY_NAMES[s.dayOfWeek]} ${s.startTime}–${s.endTime}`)
+                  .join(", ")}`}
+          </p>
+        )}
       </div>
+
       <div>
-        <label htmlFor="target-date" className="block text-sm font-medium text-slate-700">
-          Date to attend
-        </label>
+        <label htmlFor="swap-request-target-date" className="text-sm font-medium text-ink-700">Date to attend</label>
         <input
-          id="target-date"
+          id="swap-request-target-date"
+          required
+          aria-required="true"
           type="date"
+          min={todayIso()}
           value={targetDate}
           onChange={(e) => setTargetDate(e.target.value)}
-          className="mt-1 block w-full rounded-md border-slate-300"
-          required
+          className="mt-1 w-full rounded-sm border border-border-strong px-3 py-2 text-sm focus-ring"
         />
       </div>
+
       <div>
-        <label htmlFor="reason" className="block text-sm font-medium text-slate-700">
-          Reason (optional)
-        </label>
-        <input
-          id="reason"
-          type="text"
+        <label htmlFor="swap-request-reason" className="text-sm font-medium text-ink-700">Reason (optional)</label>
+        <textarea
+          id="swap-request-reason"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
-          className="mt-1 block w-full rounded-md border-slate-300"
+          rows={2}
+          placeholder="e.g. I'll be away from my usual class that day."
+          className="mt-1 w-full rounded-sm border border-border-strong px-3 py-2 text-sm focus-ring"
         />
       </div>
-      {error && <p className="text-sm text-rose-600">{error}</p>}
-      <button
-        type="submit"
-        disabled={mutation.isPending}
-        className="rounded-md bg-accent-600 px-4 py-2 text-sm font-medium text-white"
-      >
-        Request swap
-      </button>
+
+      {mutation.isError && <ErrorState message={extractErrorMessage(mutation.error)} />}
+
+      <Button type="submit" size="sm" disabled={mutation.isPending || !originDate || !targetDate}>
+        {mutation.isPending ? "Sending…" : "Request swap"}
+      </Button>
     </form>
   );
 }
 ```
 
-Replace `MyVisitRequests` (currently lines 126-177) with `MySwapRequests`, using `fetchOwnSwapRequests`/`cancelSwapRequest`/`SwapStatusBadge`, and rendering both the origin and target session lines per request (e.g. `"Miss {originClassName} on {originDate}"` / `"Join {targetClassName} on {targetDate}"`), keeping the existing cancel-button-for-PENDING-only behavior.
+Replace `MyVisitRequests` (currently lines 126-177) with `MySwapRequests`:
 
-Update `PupilSchedulePage` (currently lines 179-213): header text "Visit another class" → "Swap a session" (currently line 195) and "My visit requests" → "My swap requests" (currently line 205); render `<SwapRequestForm />` and `<MySwapRequests />` in place of the old components.
+```typescript
+function MySwapRequests() {
+  const queryClient = useQueryClient();
+  const requestsQuery = useQuery({ queryKey: ["pupil", "swap-requests"], queryFn: fetchOwnSwapRequests });
 
-Update the file's import block to import `fetchOtherClasses`, `fetchOwnSwapRequests`, `createSwapRequest`, `cancelSwapRequest` from `../../api/pupil.js`, `SwapStatusBadge` from `../../components/Badge.js`, and `PupilSwapRequest` from `../../api/types.js` as needed.
+  const cancelMutation = useMutation({
+    mutationFn: (id: string) => cancelSwapRequest(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pupil", "swap-requests"] }),
+  });
+
+  if (requestsQuery.isLoading) return <Spinner />;
+
+  const requests = requestsQuery.data ?? [];
+  if (requests.length === 0) {
+    return <EmptyState title="No swap requests yet" description="Requests you send will show up here." />;
+  }
+
+  return (
+    <ul className="space-y-2.5">
+      {requests.map((r) => (
+        <li key={r.id} className="rounded-sm bg-canvas p-3">
+          <div className="flex flex-wrap items-start justify-between gap-2">
+            <div>
+              <p className="text-sm font-medium text-ink-900">{r.targetClassName}</p>
+              <p className="mt-1 text-xs text-ink-500">
+                {new Date(r.targetDate).toLocaleDateString(undefined, {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
+              <p className="mt-1 text-xs text-ink-400">
+                instead of {r.originClassName} on{" "}
+                {new Date(r.originDate).toLocaleDateString(undefined, {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
+              {r.reason && <p className="mt-1 text-xs italic text-ink-400">"{r.reason}"</p>}
+            </div>
+            <div className="flex items-center gap-2">
+              <SwapStatusBadge status={r.status} />
+              {r.status === "PENDING" && (
+                <button
+                  onClick={() => cancelMutation.mutate(r.id)}
+                  disabled={cancelMutation.isPending}
+                  className="focus-ring rounded-sm text-xs font-medium text-danger-600 hover:text-danger-700"
+                >
+                  Cancel
+                </button>
+              )}
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+Update `PupilSchedulePage` (currently lines 179-213): header text "Visit another class" → "Swap a session" (currently line 195, and update the description paragraph below it to reference swapping) and "My visit requests" → "My swap requests" (currently line 205); render `<SwapRequestForm />` and `<MySwapRequests />` in place of the old components. `Card` wraps both panels exactly as before — untouched by this task.
+
+Update the file's import block: replace `cancelVisitRequest`/`createVisitRequest`/`fetchOwnVisitRequests` with `cancelSwapRequest`/`createSwapRequest`/`fetchOwnSwapRequests` from `../../api/pupil`; replace `VisitStatusBadge` with `SwapStatusBadge` and drop `ClassTypeBadge` from the `../../components/Badge` import; keep `Button`, `Card`, `EmptyState`/`ErrorState`/`Spinner`, `extractErrorMessage`, `ScheduleView`, `DAY_NAMES`, and the `toast` import exactly as they are today.
 
 - [ ] **Step 4: Run test to verify it passes**
 
