@@ -2,16 +2,16 @@ import { z } from "zod";
 
 const CLASS_TYPE_VALUES = ["SCIENCE", "MATH", "INFO", "ECO"] as const;
 
-const name = z.string().trim().min(2, "Enter your full name.");
-const email = z.string().trim().min(1, "Email is required.").email("Enter a valid email address.");
-const password = z.string().min(6, "Password must be at least 6 characters.");
+const name = z.string().trim().min(2, "Entrez votre nom complet.");
+const email = z.string().trim().min(1, "L'e-mail est requis.").email("Entrez une adresse e-mail valide.");
+const password = z.string().min(6, "Le mot de passe doit contenir au moins 6 caractères.");
 
 const teacherFields = z.object({
   role: z.literal("TEACHER"),
   name,
   email,
   password,
-  confirmPassword: z.string().min(1, "Confirm your password."),
+  confirmPassword: z.string().min(1, "Confirmez votre mot de passe."),
 });
 
 const parentFields = z.object({
@@ -19,19 +19,19 @@ const parentFields = z.object({
   name,
   email,
   password,
-  confirmPassword: z.string().min(1, "Confirm your password."),
+  confirmPassword: z.string().min(1, "Confirmez votre mot de passe."),
 });
 
-const phone = z.string().trim().min(6, "Enter a valid phone number.");
+const phone = z.string().trim().min(6, "Entrez un numéro de téléphone valide.");
 
 const pupilFields = z.object({
   role: z.literal("PUPIL"),
   name,
   email,
   password,
-  confirmPassword: z.string().min(1, "Confirm your password."),
-  requestedType: z.enum(CLASS_TYPE_VALUES, { message: "Choose a class type." }),
-  teacherCode: z.string().trim().min(1, "Enter your teacher's ID."),
+  confirmPassword: z.string().min(1, "Confirmez votre mot de passe."),
+  requestedType: z.enum(CLASS_TYPE_VALUES, { message: "Choisissez un type de classe." }),
+  teacherCode: z.string().trim().min(1, "Entrez l'identifiant de votre enseignant."),
   phone,
   parentPhone: phone,
 });
@@ -39,7 +39,7 @@ const pupilFields = z.object({
 export const registerSchema = z
   .discriminatedUnion("role", [teacherFields, parentFields, pupilFields])
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match.",
+    message: "Les mots de passe ne correspondent pas.",
     path: ["confirmPassword"],
   });
 
@@ -47,7 +47,7 @@ export type RegisterFormValues = z.infer<typeof registerSchema>;
 
 export const loginSchema = z.object({
   email,
-  password: z.string().min(1, "Password is required."),
+  password: z.string().min(1, "Le mot de passe est requis."),
 });
 
 export type LoginFormValues = z.infer<typeof loginSchema>;
@@ -61,10 +61,10 @@ export type ForgotPasswordFormValues = z.infer<typeof forgotPasswordSchema>;
 export const resetPasswordSchema = z
   .object({
     password,
-    confirmPassword: z.string().min(1, "Confirm your password."),
+    confirmPassword: z.string().min(1, "Confirmez votre mot de passe."),
   })
   .refine((data) => data.password === data.confirmPassword, {
-    message: "Passwords don't match.",
+    message: "Les mots de passe ne correspondent pas.",
     path: ["confirmPassword"],
   });
 
@@ -72,16 +72,16 @@ export type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
 
 export const changePasswordSchema = z
   .object({
-    currentPassword: z.string().min(1, "Enter your current password."),
+    currentPassword: z.string().min(1, "Entrez votre mot de passe actuel."),
     newPassword: password,
-    confirmNewPassword: z.string().min(1, "Confirm your new password."),
+    confirmNewPassword: z.string().min(1, "Confirmez votre nouveau mot de passe."),
   })
   .refine((data) => data.newPassword === data.confirmNewPassword, {
-    message: "Passwords don't match.",
+    message: "Les mots de passe ne correspondent pas.",
     path: ["confirmNewPassword"],
   })
   .refine((data) => data.currentPassword !== data.newPassword, {
-    message: "New password must be different from your current password.",
+    message: "Le nouveau mot de passe doit être différent de votre mot de passe actuel.",
     path: ["newPassword"],
   });
 
