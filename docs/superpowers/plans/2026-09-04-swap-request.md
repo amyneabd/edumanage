@@ -1460,6 +1460,8 @@ git commit -m "feat: add SWAP_REQUEST notification icon/color mapping"
 
 Create `client/src/features/pupil/SchedulePage.test.tsx`, modeled on `client/src/features/teacher/VacationSessionsPanel.test.tsx` (for the `vi.hoisted`/`vi.mock`/`renderWithClient` scaffold) and `client/src/features/teacher/PupilLedgerModal.test.tsx` (for the `userEvent` interaction pattern):
 
+**CORRECTION (post-Task-14-preflight-check, test code):** The `OtherClass` type (`client/src/api/types.ts:408-413`) requires a `type: ClassType` field (`ClassType = "SCIENCE" | "MATH" | "INFO" | "ECO"`), and the real `SwapRequestForm`'s class `<option>` renders `{c.name} ({c.type})` (matching the current file's own `VisitRequestForm` pattern verbatim). The mock below has been corrected to include `type: "MATH"`, and the `waitFor` assertion below changed from an exact-text `getByText("Other Class")` (which would never match the rendered `"Other Class (MATH)"` option text) to a partial-match regex `getByText(/Other Class/)`.
+
 ```typescript
 import { describe, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -1489,7 +1491,7 @@ function renderWithClient(ui: React.ReactElement) {
 
 describe("PupilSchedulePage", () => {
   it("submits a swap request with origin date, target class, and target date", async () => {
-    fetchOtherClasses.mockResolvedValue([{ id: "class-2", name: "Other Class", scheduleSlots: [] }]);
+    fetchOtherClasses.mockResolvedValue([{ id: "class-2", name: "Other Class", type: "MATH", scheduleSlots: [] }]);
     fetchOwnSwapRequests.mockResolvedValue([]);
     createSwapRequest.mockResolvedValue({
       id: "req-1",
@@ -1507,7 +1509,7 @@ describe("PupilSchedulePage", () => {
     const user = userEvent.setup();
     renderWithClient(<PupilSchedulePage />);
 
-    await waitFor(() => expect(screen.getByText("Other Class")).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/Other Class/)).toBeInTheDocument());
 
     await user.type(screen.getByLabelText(/session you'll miss/i), "2026-09-07");
     await user.selectOptions(screen.getByLabelText(/class to join/i), "class-2");
