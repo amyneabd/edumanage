@@ -1,17 +1,12 @@
 import { Link } from "react-router-dom";
 import { Card } from "../../components/Card";
+import { PAYMENT_STATUS_LABELS } from "../../lib/labels";
 import type { PaymentStatus } from "../../api/types";
 
 const SEGMENT_COLORS: Record<PaymentStatus, string> = {
   PAID: "bg-success-600",
   INCOMPLETE: "bg-accent-600",
   UNPAID: "bg-danger-600",
-};
-
-const LABELS: Record<PaymentStatus, string> = {
-  PAID: "Paid",
-  INCOMPLETE: "Incomplete",
-  UNPAID: "Unpaid",
 };
 
 export function PaymentHealthCard({ summary }: { summary: Record<PaymentStatus, number> }) {
@@ -22,22 +17,22 @@ export function PaymentHealthCard({ summary }: { summary: Record<PaymentStatus, 
   return (
     <Card className="p-6">
       <div className="flex items-baseline justify-between">
-        <h2 className="text-sm font-medium text-ink-700">Payment health this month</h2>
+        <h2 className="text-sm font-medium text-ink-700">Santé des paiements ce mois-ci</h2>
         <Link
           to="/teacher/ledger"
           className="focus-ring rounded-sm text-xs font-medium text-accent-600 hover:text-accent-700"
         >
-          View ledger
+          Voir le registre
         </Link>
       </div>
 
       {total === 0 ? (
-        <p className="mt-6 text-center text-sm text-ink-400">No active pupils to bill yet.</p>
+        <p className="mt-6 text-center text-sm text-ink-400">Aucun élève actif à facturer pour l'instant.</p>
       ) : (
         <>
           <p className="mt-2 text-3xl font-semibold tracking-tight text-ink-900">
             {percentPaid}%
-            <span className="ml-2 text-sm font-normal text-ink-400">paid up</span>
+            <span className="ml-2 text-sm font-normal text-ink-400">payé</span>
           </p>
 
           <div className="mt-4 flex h-3 w-full overflow-hidden rounded-full bg-border">
@@ -47,7 +42,7 @@ export function PaymentHealthCard({ summary }: { summary: Record<PaymentStatus, 
                   key={status}
                   className={SEGMENT_COLORS[status]}
                   style={{ width: `${(summary[status] / total) * 100}%` }}
-                  title={`${LABELS[status]}: ${summary[status]}`}
+                  title={`${PAYMENT_STATUS_LABELS[status]}: ${summary[status]}`}
                 />
               ) : null
             )}
@@ -57,7 +52,7 @@ export function PaymentHealthCard({ summary }: { summary: Record<PaymentStatus, 
             {order.map((status) => (
               <div key={status} className="flex items-center gap-1.5 text-xs text-ink-500">
                 <span className={`h-2 w-2 rounded-full ${SEGMENT_COLORS[status]}`} />
-                {LABELS[status]} · {summary[status]}
+                {PAYMENT_STATUS_LABELS[status]} · {summary[status]}
               </div>
             ))}
           </div>

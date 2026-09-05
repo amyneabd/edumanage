@@ -41,7 +41,7 @@ describe("PupilContactModal", () => {
 
   it("falls back to a 'no linked parent account' message with just the phone when unlinked", () => {
     render(<PupilContactModal pupil={{ ...pupil, parentName: null }} onClose={() => {}} />);
-    expect(screen.getByText("No linked parent account")).toBeInTheDocument();
+    expect(screen.getByText("Aucun compte parent lié")).toBeInTheDocument();
     expect(screen.getByText("87654321")).toBeInTheDocument();
   });
 });

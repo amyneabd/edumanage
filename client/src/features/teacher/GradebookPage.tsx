@@ -35,17 +35,17 @@ function percentTone(percent: number | null): string {
 }
 
 function truncate(text: string | null, n = 24): string {
-  if (!text) return "Exam";
+  if (!text) return "Examen";
   return text.length > n ? `${text.slice(0, n)}…` : text;
 }
 
 function exportCsv(rows: GradebookPupilRow[], examLabels: string[], className: string) {
-  const header = ["Pupil", "Email", ...examLabels, "Average %"];
+  const header = ["Élève", "Email", ...examLabels, "Moyenne %"];
   const lines = rows.map((r) =>
     [
       r.name,
       r.email,
-      ...r.grades.map((g) => (g.grade !== null ? g.grade : g.submitted ? "Ungraded" : "—")),
+      ...r.grades.map((g) => (g.grade !== null ? g.grade : g.submitted ? "Non noté" : "—")),
       r.percentAverage !== null ? r.percentAverage.toFixed(1) : "—",
     ]
       .map((v) => `"${String(v).replace(/"/g, '""')}"`)
@@ -107,9 +107,9 @@ export function GradebookPage() {
   if (classes.length === 0) {
     return (
       <div>
-        <h1 className="text-2xl font-semibold text-ink-900">Gradebook</h1>
+        <h1 className="text-2xl font-semibold text-ink-900">Carnet de notes</h1>
         <div className="mt-6">
-          <EmptyState title="Create a class first" description="Grades appear here once you post exams to a class." />
+          <EmptyState title="Créez d'abord une classe" description="Les notes apparaîtront ici une fois que vous aurez publié des examens dans une classe." />
         </div>
       </div>
     );
@@ -119,13 +119,13 @@ export function GradebookPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink-900">Gradebook</h1>
-          <p className="mt-1 text-sm text-ink-500">Track exam grades across every pupil in a class.</p>
+          <h1 className="text-2xl font-semibold text-ink-900">Carnet de notes</h1>
+          <p className="mt-1 text-sm text-ink-500">Suivez les notes d'examen de tous les élèves d'une classe.</p>
         </div>
         <select
           value={classId}
           onChange={(e) => setClassId(e.target.value)}
-          aria-label="Select class"
+          aria-label="Sélectionner une classe"
           className="focus-ring rounded-sm border border-border-strong bg-surface px-3 py-2 text-sm text-ink-900"
         >
           {classes.map((c) => (
@@ -143,48 +143,48 @@ export function GradebookPage() {
       ) : !gradebook || gradebook.exams.length === 0 ? (
         <div className="mt-6">
           <EmptyState
-            title="No exams yet"
-            description="Create an exam post with a max grade in Communication to start tracking grades."
+            title="Aucun examen pour l'instant"
+            description="Créez une publication de type examen avec une note maximale dans Communication pour commencer à suivre les notes."
           />
         </div>
       ) : (
         <>
           <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <StatCard
-              label="Class average"
+              label="Moyenne de la classe"
               value={classAverage !== null ? `${classAverage.toFixed(1)}%` : "—"}
-              hint={`${gradebook.pupils.length} pupil${gradebook.pupils.length === 1 ? "" : "s"} tracked`}
+              hint={`${gradebook.pupils.length} élève${gradebook.pupils.length === 1 ? "" : "s"} suivi${gradebook.pupils.length === 1 ? "" : "s"}`}
               icon={<Sigma className="h-[18px] w-[18px]" strokeWidth={1.8} />}
             />
             <StatCard
-              label="Exams tracked"
+              label="Examens suivis"
               value={gradebook.exams.length}
-              hint="Posts of type exam"
+              hint="Publications de type examen"
               icon={<ClipboardList className="h-[18px] w-[18px]" strokeWidth={1.8} />}
             />
             <StatCard
-              label="Graded"
+              label="Notées"
               value={totalGraded}
-              hint={`out of ${totalSubmitted} submissions`}
+              hint={`sur ${totalSubmitted} soumissions`}
               icon={<CheckCircle2 className="h-[18px] w-[18px]" strokeWidth={1.8} />}
             />
             <StatCard
-              label="Pending grading"
+              label="En attente de notation"
               value={pendingGrading}
-              hint="Submitted but not yet graded"
+              hint="Soumis mais pas encore noté"
               icon={<Hourglass className="h-[18px] w-[18px]" strokeWidth={1.8} />}
             />
           </div>
 
           <Card className="mt-6 p-5">
-            <h2 className="text-sm font-medium text-ink-700">Average score per exam</h2>
+            <h2 className="text-sm font-medium text-ink-700">Note moyenne par examen</h2>
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={chartData}>
                   <CartesianGrid strokeDasharray="3 3" vertical={false} stroke={CHART_GRID_STROKE} />
                   <XAxis dataKey="name" tick={CHART_TICK_STYLE} />
                   <YAxis domain={[0, 100]} tickFormatter={(v) => `${v}%`} tick={CHART_TICK_STYLE} />
-                  <Tooltip formatter={(value) => [`${value}%`, "Average"]} contentStyle={CHART_TOOLTIP_STYLE} cursor={CHART_CURSOR_FILL} />
+                  <Tooltip formatter={(value) => [`${value}%`, "Moyenne"]} contentStyle={CHART_TOOLTIP_STYLE} cursor={CHART_CURSOR_FILL} />
                   <Bar dataKey="average" fill={CHART_BAR_FILL} radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
@@ -198,25 +198,25 @@ export function GradebookPage() {
               onClick={() => exportCsv(gradebook.pupils, gradebook.exams.map((e) => truncate(e.content, 20)), gradebook.className)}
               disabled={gradebook.pupils.length === 0}
             >
-              Export CSV
+              Exporter en CSV
             </Button>
           </div>
 
           <Card className="mt-4 overflow-x-auto p-5">
             {gradebook.pupils.length === 0 ? (
-              <EmptyState title="No active pupils in this class" />
+              <EmptyState title="Aucun élève actif dans cette classe" />
             ) : (
               <table className="w-full min-w-[720px] text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-ink-400">
-                    <th scope="col" className="pb-2 pr-3 font-medium">Pupil</th>
+                    <th scope="col" className="pb-2 pr-3 font-medium">Élève</th>
                     {gradebook.exams.map((e) => (
-                      <th key={e.id} scope="col" className="pb-2 px-2 font-medium" title={e.content ?? "Exam"}>
+                      <th key={e.id} scope="col" className="pb-2 px-2 font-medium" title={e.content ?? "Examen"}>
                         {truncate(e.content, 16)}
                         {e.maxGrade != null && <span className="ml-1 text-ink-400">/{e.maxGrade}</span>}
                       </th>
                     ))}
-                    <th scope="col" className="pb-2 pl-2 text-right font-medium">Average</th>
+                    <th scope="col" className="pb-2 pl-2 text-right font-medium">Moyenne</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -237,7 +237,7 @@ export function GradebookPage() {
                               </span>
                             ) : g.submitted ? (
                               <span className="inline-flex rounded-full bg-accent-100 px-2 py-1 text-xs font-semibold text-accent-600">
-                                Ungraded
+                                Non noté
                               </span>
                             ) : (
                               <span className="text-xs text-ink-400">—</span>

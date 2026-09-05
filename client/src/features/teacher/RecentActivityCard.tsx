@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
 import { fetchNotifications, markNotificationRead } from "../../api/teacher";
 import { NOTIFICATION_META } from "../../lib/notificationMeta";
 import { Card } from "../../components/Card";
@@ -31,10 +32,10 @@ export function RecentActivityCard() {
 
   return (
     <Card className="p-6">
-      <h2 className="text-sm font-medium text-ink-700">Recent activity</h2>
+      <h2 className="text-sm font-medium text-ink-700">Activité récente</h2>
       {items.length === 0 ? (
         <div className="mt-4">
-          <EmptyState title="Nothing yet" description="Pupil requests, submissions, and payment alerts show up here." />
+          <EmptyState title="Rien pour l'instant" description="Les demandes des élèves, les soumissions et les alertes de paiement s'affichent ici." />
         </div>
       ) : (
         <ul className="mt-4 space-y-1">
@@ -60,7 +61,7 @@ export function RecentActivityCard() {
                     </span>
                     <span className="mt-0.5 block truncate text-xs text-ink-500">{n.body}</span>
                     <span className="mt-0.5 block text-[11px] text-ink-400">
-                      {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                      {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: fr })}
                     </span>
                   </span>
                 </button>

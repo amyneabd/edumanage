@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { Card } from "../../components/Card";
 import { ClassTypeBadge } from "../../components/Badge";
 import { EmptyState } from "../../components/Feedback";
-import { DAY_NAMES } from "../../lib/period";
+import { DAY_NAMES, formatDate } from "../../lib/period";
 import type { ScheduleEntry } from "../../api/types";
 
 function minutesSinceMidnight(time: string): number {
@@ -11,8 +11,8 @@ function minutesSinceMidnight(time: string): number {
 }
 
 function weeklyDayLabel(offsetDays: number, dayOfWeek: number): string {
-  if (offsetDays === 0) return "Today";
-  if (offsetDays === 1) return "Tomorrow";
+  if (offsetDays === 0) return "Aujourd'hui";
+  if (offsetDays === 1) return "Demain";
   return DAY_NAMES[dayOfWeek] ?? "";
 }
 
@@ -21,9 +21,9 @@ function vacationDayLabel(dateKey: string): string {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const offsetDays = Math.round((date.getTime() - today.getTime()) / 86_400_000);
-  if (offsetDays === 0) return "Today";
-  if (offsetDays === 1) return "Tomorrow";
-  return date.toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+  if (offsetDays === 0) return "Aujourd'hui";
+  if (offsetDays === 1) return "Demain";
+  return formatDate(date, { weekday: "short", month: "short", day: "numeric" });
 }
 
 interface RankedEntry extends ScheduleEntry {
@@ -64,12 +64,12 @@ export function UpcomingSchedule({ schedule }: { schedule: ScheduleEntry[] }) {
 
   return (
     <Card className="p-6">
-      <h2 className="text-sm font-medium text-ink-700">Upcoming sessions</h2>
+      <h2 className="text-sm font-medium text-ink-700">Séances à venir</h2>
       {upcoming.length === 0 ? (
         <div className="mt-4">
           <EmptyState
-            title="No scheduled sessions"
-            description="Add a weekly schedule from a class's detail page."
+            title="Aucune séance programmée"
+            description="Ajoutez un emploi du temps hebdomadaire depuis la page de détail d'une classe."
           />
         </div>
       ) : (

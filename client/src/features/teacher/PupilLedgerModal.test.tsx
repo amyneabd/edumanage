@@ -46,20 +46,20 @@ describe("PupilLedgerModal", () => {
     fetchPupilLedgerMock.mockResolvedValue(ledger);
     renderWithClient(<PupilLedgerModal pupilId="p1" pupilName="Ada" onClose={() => {}} />);
 
-    expect(await screen.findByText(/owes 50 TND overall/i)).toBeInTheDocument();
+    expect(await screen.findByText(/doit 50 TND au total/i)).toBeInTheDocument();
 
-    const septRow = screen.getByText("September 2026").closest("tr")!;
+    const septRow = screen.getByText("septembre 2026").closest("tr")!;
     expect(within(septRow).getByText("3")).toBeInTheDocument();
     expect(within(septRow).getByText("1")).toBeInTheDocument();
 
-    const augRow = screen.getByText("August 2026").closest("tr")!;
+    const augRow = screen.getByText("août 2026").closest("tr")!;
     expect(within(augRow).getByText("4")).toBeInTheDocument();
   });
 
   it("shows a credit message when the pupil has paid in advance", async () => {
     fetchPupilLedgerMock.mockResolvedValue({ ...ledger, balance: -25, sessionsInAdvance: 3 });
     renderWithClient(<PupilLedgerModal pupilId="p1" pupilName="Ada" onClose={() => {}} />);
-    expect(await screen.findByText(/25 TND credit \(paid in advance\) — about 3 sessions ahead/i)).toBeInTheDocument();
+    expect(await screen.findByText(/25 TND de crédit \(payé en avance\) — soit environ 3 séances d'avance/i)).toBeInTheDocument();
   });
 
   it("commits an edited amount-paid value for the correct period on blur", async () => {
@@ -68,7 +68,7 @@ describe("PupilLedgerModal", () => {
     const user = userEvent.setup();
     renderWithClient(<PupilLedgerModal pupilId="p1" pupilName="Ada" onClose={() => {}} />);
 
-    const input = await screen.findByLabelText("Amount paid for September 2026");
+    const input = await screen.findByLabelText("Montant payé pour septembre 2026");
     await user.clear(input);
     await user.type(input, "80");
     await user.tab();

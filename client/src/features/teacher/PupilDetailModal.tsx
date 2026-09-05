@@ -7,8 +7,9 @@ import { Modal } from "../../components/Modal";
 import { ClassTypeBadge, PaymentBadge } from "../../components/Badge";
 import { Spinner } from "../../components/Feedback";
 import { Button } from "../../components/Button";
-import { DAY_NAMES, currentPeriod, formatPeriodLabel, shiftPeriod } from "../../lib/period";
+import { DAY_NAMES, currentPeriod, formatDate, formatPeriodLabel, shiftPeriod } from "../../lib/period";
 import { formatCurrency } from "../../lib/currency";
+import { ATTENDANCE_DISPLAY_LABELS } from "../../lib/labels";
 import { PupilLedgerModal } from "./PupilLedgerModal";
 import { PupilContactModal } from "./PupilContactModal";
 import type { AttendanceDay, AttendanceStatus } from "../../api/types";
@@ -41,15 +42,6 @@ const DISPLAY_STYLES: Record<AttendanceDay["display"], string> = {
   ABSENT: "bg-danger-600 text-white hover:bg-danger-700",
   EXCUSED: "bg-warning-600 text-white hover:bg-warning-700",
   UNMARKED: "border-2 border-dashed border-border-strong text-ink-500 hover:border-accent-600 hover:text-accent-600",
-};
-
-const DISPLAY_LABELS: Record<AttendanceDay["display"], string> = {
-  FUTURE: "Upcoming session",
-  TODAY: "Today's session",
-  PRESENT: "Present",
-  ABSENT: "Absent",
-  EXCUSED: "Excused",
-  UNMARKED: "Not marked yet — click to record",
 };
 
 export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null; onClose: () => void }) {
@@ -129,7 +121,7 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
 
   return (
     <>
-    <Modal open={!!pupilId} onClose={onClose} title={pupil?.name ?? "Pupil"} maxWidthClassName="max-w-lg">
+    <Modal open={!!pupilId} onClose={onClose} title={pupil?.name ?? "Élève"} maxWidthClassName="max-w-lg">
       {!pupil || calendarQuery.isLoading ? (
         <Spinner />
       ) : (
@@ -148,22 +140,22 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
               type="button"
               onClick={() => setContactOpen(true)}
               className="focus-ring flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-border-strong text-ink-500 hover:bg-canvas"
-              title="View contact info"
-              aria-label="View contact info"
+              title="Voir les coordonnées"
+              aria-label="Voir les coordonnées"
             >
               <User className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
             </button>
           </div>
 
           <div className="mt-5 flex items-center justify-between">
-            <h3 className="text-sm font-medium text-ink-700">Attendance</h3>
+            <h3 className="text-sm font-medium text-ink-700">Présences</h3>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={() => setPeriod(shiftPeriod(period, -1))}
                 className="focus-ring flex h-11 w-11 items-center justify-center rounded-sm border border-border-strong text-ink-500 hover:bg-canvas"
-                title="Previous month"
-                aria-label="Previous month"
+                title="Mois précédent"
+                aria-label="Mois précédent"
               >
                 <ChevronLeft className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
               </button>
@@ -172,8 +164,8 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
                 type="button"
                 onClick={() => setPeriod(shiftPeriod(period, 1))}
                 className="focus-ring flex h-11 w-11 items-center justify-center rounded-sm border border-border-strong text-ink-500 hover:bg-canvas"
-                title="Next month"
-                aria-label="Next month"
+                title="Mois suivant"
+                aria-label="Mois suivant"
               >
                 <ChevronRight className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
               </button>
@@ -181,9 +173,9 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
           </div>
 
           {!pupil.classId ? (
-            <p className="mt-6 text-center text-sm text-ink-400">This pupil isn't assigned to a class yet.</p>
+            <p className="mt-6 text-center text-sm text-ink-400">Cet élève n'est pas encore assigné à une classe.</p>
           ) : days.length === 0 ? (
-            <p className="mt-6 text-center text-sm text-ink-400">No sessions scheduled for this class yet.</p>
+            <p className="mt-6 text-center text-sm text-ink-400">Aucune séance programmée pour cette classe pour l'instant.</p>
           ) : (
             <>
               <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-medium uppercase tracking-wide text-ink-400">
@@ -203,8 +195,8 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
                     <button
                       key={i}
                       type="button"
-                      title={`${cell.entry.startTime}–${cell.entry.endTime} · ${DISPLAY_LABELS[cell.entry.display]}`}
-                      aria-label={`${cell.dayNumber} ${formatPeriodLabel(period)}, ${cell.entry.startTime}–${cell.entry.endTime}, ${DISPLAY_LABELS[cell.entry.display]}`}
+                      title={`${cell.entry.startTime}–${cell.entry.endTime} · ${ATTENDANCE_DISPLAY_LABELS[cell.entry.display]}`}
+                      aria-label={`${cell.dayNumber} ${formatPeriodLabel(period)}, ${cell.entry.startTime}–${cell.entry.endTime}, ${ATTENDANCE_DISPLAY_LABELS[cell.entry.display]}`}
                       disabled={cell.entry.display === "FUTURE"}
                       onClick={() => handleDayClick(cell.entry!)}
                       className={clsx(
@@ -229,50 +221,50 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
 
               <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-ink-500">
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-success-600" /> Present ({stats.present})
+                  <span className="h-2.5 w-2.5 rounded-full bg-success-600" /> {ATTENDANCE_DISPLAY_LABELS.PRESENT} ({stats.present})
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-danger-600" /> Absent ({stats.absent})
+                  <span className="h-2.5 w-2.5 rounded-full bg-danger-600" /> {ATTENDANCE_DISPLAY_LABELS.ABSENT} ({stats.absent})
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-warning-600" /> Excused ({stats.excused})
+                  <span className="h-2.5 w-2.5 rounded-full bg-warning-600" /> {ATTENDANCE_DISPLAY_LABELS.EXCUSED} ({stats.excused})
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full border-2 border-dashed border-border-strong" /> Not marked ({stats.unmarked})
+                  <span className="h-2.5 w-2.5 rounded-full border-2 border-dashed border-border-strong" /> {ATTENDANCE_DISPLAY_LABELS.UNMARKED} ({stats.unmarked})
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-border" /> Upcoming ({stats.upcoming})
+                  <span className="h-2.5 w-2.5 rounded-full bg-border" /> {ATTENDANCE_DISPLAY_LABELS.FUTURE} ({stats.upcoming})
                 </span>
                 <span className="flex items-center gap-1.5">
-                  <span className="h-2.5 w-2.5 rounded-full bg-accent-600" /> Today
+                  <span className="h-2.5 w-2.5 rounded-full bg-accent-600" /> {ATTENDANCE_DISPLAY_LABELS.TODAY}
                 </span>
               </div>
               <p className="mt-3 text-[11px] text-ink-400">
-                Click a past or today's session to cycle it between present, absent, and not marked.
+                Cliquez sur une séance passée ou d'aujourd'hui pour la faire passer entre présent, absent et non marqué.
               </p>
             </>
           )}
 
           <div className="mt-6 border-t border-border pt-4">
             <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-ink-700">Payment history</h3>
+              <h3 className="text-sm font-medium text-ink-700">Historique des paiements</h3>
               <Button variant="secondary" size="sm" onClick={() => setLedgerPupilId(pupilId)}>
-                Full ledger
+                Registre complet
               </Button>
             </div>
             {paymentsQuery.isLoading ? (
               <Spinner />
             ) : !paymentsQuery.data || paymentsQuery.data.length === 0 ? (
-              <p className="mt-2 text-sm text-ink-400">No payment records yet.</p>
+              <p className="mt-2 text-sm text-ink-400">Aucun paiement enregistré pour l'instant.</p>
             ) : (
               <div className="mt-2 overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-left text-xs uppercase tracking-wide text-ink-400">
-                    <th scope="col" className="pb-1.5 font-medium">Period</th>
-                    <th scope="col" className="pb-1.5 font-medium">Status</th>
-                    <th scope="col" className="pb-1.5 font-medium">Paid / Due</th>
-                    <th scope="col" className="pb-1.5 font-medium">Due date</th>
+                    <th scope="col" className="pb-1.5 font-medium">Période</th>
+                    <th scope="col" className="pb-1.5 font-medium">Statut</th>
+                    <th scope="col" className="pb-1.5 font-medium">Payé / Dû</th>
+                    <th scope="col" className="pb-1.5 font-medium">Date d'échéance</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-border">
@@ -281,13 +273,13 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
                       <td className="py-1.5 font-medium text-ink-700">{formatPeriodLabel(entry.period)}</td>
                       <td className="py-1.5">
                         <PaymentBadge status={entry.status} />
-                        {entry.isOverdue && <span className="ml-1.5 text-[11px] font-medium text-danger-600">overdue</span>}
+                        {entry.isOverdue && <span className="ml-1.5 text-[11px] font-medium text-danger-600">en retard</span>}
                       </td>
                       <td className="py-1.5 text-ink-500">
                         {formatCurrency(entry.amountPaid)} / {formatCurrency(entry.amountDue)}
                       </td>
                       <td className="py-1.5 text-ink-500">
-                        {entry.dueDate ? new Date(entry.dueDate).toLocaleDateString() : "—"}
+                        {entry.dueDate ? formatDate(entry.dueDate) : "—"}
                       </td>
                     </tr>
                   ))}

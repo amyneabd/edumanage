@@ -45,6 +45,6 @@ describe("PupilDetailModal attendance calendar", () => {
 
     renderWithClient(<PupilDetailModal pupilId="pupil-1" onClose={() => {}} />);
 
-    await waitFor(() => expect(screen.getByText(/excused/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/excusé/i)).toBeInTheDocument());
   });
 });

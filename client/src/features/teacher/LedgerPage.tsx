@@ -12,12 +12,11 @@ import { Pagination } from "../../components/Pagination";
 import { usePagination } from "../../hooks/usePagination";
 import { currentPeriod, formatPeriodLabel, shiftPeriod } from "../../lib/period";
 import { formatCurrency } from "../../lib/currency";
+import { PAYMENT_STATUS_LABELS } from "../../lib/labels";
 import type { LedgerRow, PaymentStatus } from "../../api/types";
 
 const PAGE_SIZE = 20;
 const PAYMENT_STATUSES: PaymentStatus[] = ["PAID", "UNPAID", "INCOMPLETE"];
-// Display-only labels for chart legend/tooltip text — presentation string, not a status-logic change.
-const STATUS_LABELS: Record<PaymentStatus, string> = { PAID: "Paid", UNPAID: "Unpaid", INCOMPLETE: "Incomplete" };
 // success-600 / danger-600 / warning-700 — exact hex match to Badge.tsx's paymentColors
 // (warning uses the -700 text tier there, not -600, for contrast against bg-warning-100).
 const STATUS_COLORS: Record<PaymentStatus, string> = { PAID: "#20B26B", UNPAID: "#DC2626", INCOMPLETE: "#B45309" };
@@ -58,17 +57,17 @@ function sortRows(rows: LedgerRow[]): LedgerRow[] {
 }
 
 function exportCsv(rows: LedgerRow[], period: string) {
-  const header = ["Name", "Email", "Class", "Status", "Amount due", "Amount paid", "Due date", "Overdue"];
+  const header = ["Nom", "Email", "Classe", "Statut", "Montant dû", "Montant payé", "Date d'échéance", "En retard"];
   const lines = rows.map((r) =>
     [
       r.name,
       r.email,
       r.className ?? "",
-      r.status,
+      PAYMENT_STATUS_LABELS[r.status],
       r.amountDue ?? "",
       r.amountPaid,
       r.dueDate ? toDateInputValue(r.dueDate) : "",
-      r.isOverdue ? "Yes" : "No",
+      r.isOverdue ? "Oui" : "Non",
     ]
       .map((v) => `"${String(v).replace(/"/g, '""')}"`)
       .join(",")
@@ -122,13 +121,13 @@ export function LedgerPage() {
   const statusBreakdown = useMemo(() => {
     const counts: Record<PaymentStatus, number> = { PAID: 0, UNPAID: 0, INCOMPLETE: 0 };
     for (const r of rows) counts[r.status] += 1;
-    return PAYMENT_STATUSES.map((s) => ({ status: s, name: STATUS_LABELS[s], value: counts[s] }));
+    return PAYMENT_STATUSES.map((s) => ({ status: s, name: PAYMENT_STATUS_LABELS[s], value: counts[s] }));
   }, [rows]);
 
   const byClass = useMemo(() => {
     const map = new Map<string, { name: string; PAID: number; UNPAID: number; INCOMPLETE: number }>();
     for (const r of rows) {
-      const key = r.className ?? "Unassigned";
+      const key = r.className ?? "Non assigné";
       if (!map.has(key)) map.set(key, { name: key, PAID: 0, UNPAID: 0, INCOMPLETE: 0 });
       map.get(key)![r.status] += 1;
     }
@@ -139,28 +138,28 @@ export function LedgerPage() {
     <div>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold text-ink-900">Ledger</h1>
-          <p className="mt-1 text-sm text-ink-500">Every pupil, their class, and payment status by month.</p>
+          <h1 className="text-2xl font-semibold text-ink-900">Registre</h1>
+          <p className="mt-1 text-sm text-ink-500">Chaque élève, sa classe et son statut de paiement par mois.</p>
         </div>
         <div className="flex items-center gap-2">
           <button
             type="button"
             onClick={() => setPeriod(shiftPeriod(period, -1))}
-            aria-label="Previous month"
-            title="Previous month"
+            aria-label="Mois précédent"
+            title="Mois précédent"
             className="focus-ring flex h-11 w-11 items-center justify-center rounded-sm border border-border-strong text-ink-500 hover:bg-canvas"
           >
             <ChevronLeft className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
           </button>
           <span className="w-32 text-center text-sm font-medium text-ink-700">
             {formatPeriodLabel(period)}
-            {isCurrentPeriod && <span className="ml-1.5 text-xs font-normal text-accent-600">(current)</span>}
+            {isCurrentPeriod && <span className="ml-1.5 text-xs font-normal text-accent-600">(actuel)</span>}
           </span>
           <button
             type="button"
             onClick={() => setPeriod(shiftPeriod(period, 1))}
-            aria-label="Next month"
-            title="Next month"
+            aria-label="Mois suivant"
+            title="Mois suivant"
             className="focus-ring flex h-11 w-11 items-center justify-center rounded-sm border border-border-strong text-ink-500 hover:bg-canvas"
           >
             <ChevronRight className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
@@ -171,7 +170,7 @@ export function LedgerPage() {
               onClick={() => setPeriod(currentPeriod())}
               className="focus-ring rounded-sm text-xs font-medium text-accent-600 hover:text-accent-700"
             >
-              Today
+              Aujourd'hui
             </button>
           )}
         </div>
@@ -179,34 +178,34 @@ export function LedgerPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Collected"
+          label="Encaissé"
           value={formatCurrency(summary?.collected ?? 0)}
-          hint={`${summary?.counts.PAID ?? 0} paid this month`}
+          hint={`${summary?.counts.PAID ?? 0} payé${(summary?.counts.PAID ?? 0) === 1 ? "" : "s"} ce mois-ci`}
           icon={<CheckCircle2 className="h-[18px] w-[18px]" strokeWidth={1.8} />}
         />
         <StatCard
-          label="Outstanding"
+          label="Restant dû"
           value={formatCurrency(summary?.outstanding ?? 0)}
-          hint={`${(summary?.counts.UNPAID ?? 0) + (summary?.counts.INCOMPLETE ?? 0)} not yet paid`}
+          hint={`${(summary?.counts.UNPAID ?? 0) + (summary?.counts.INCOMPLETE ?? 0)} pas encore payé${((summary?.counts.UNPAID ?? 0) + (summary?.counts.INCOMPLETE ?? 0)) === 1 ? "" : "s"}`}
           icon={<Hourglass className="h-[18px] w-[18px]" strokeWidth={1.8} />}
         />
         <StatCard
-          label="Overdue"
+          label="En retard"
           value={formatCurrency(summary?.overdueAmount ?? 0)}
-          hint={`${summary?.overdueCount ?? 0} pupil${(summary?.overdueCount ?? 0) === 1 ? "" : "s"} past due date`}
+          hint={`${summary?.overdueCount ?? 0} élève${(summary?.overdueCount ?? 0) === 1 ? "" : "s"} en retard de paiement`}
           icon={<AlertTriangle className="h-[18px] w-[18px]" strokeWidth={1.8} />}
         />
         <StatCard
-          label="Expected this month"
+          label="Attendu ce mois-ci"
           value={formatCurrency(summary?.expected ?? 0)}
-          hint={`${summary?.pupilCount ?? 0} pupils billed`}
+          hint={`${summary?.pupilCount ?? 0} élève${(summary?.pupilCount ?? 0) === 1 ? "" : "s"} facturé${(summary?.pupilCount ?? 0) === 1 ? "" : "s"}`}
           icon={<Sigma className="h-[18px] w-[18px]" strokeWidth={1.8} />}
         />
       </div>
 
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <Card className="p-5">
-          <h2 className="text-sm font-medium text-ink-700">Payment status breakdown</h2>
+          <h2 className="text-sm font-medium text-ink-700">Répartition des statuts de paiement</h2>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <PieChart>
@@ -223,7 +222,7 @@ export function LedgerPage() {
         </Card>
 
         <Card className="p-5">
-          <h2 className="text-sm font-medium text-ink-700">By class</h2>
+          <h2 className="text-sm font-medium text-ink-700">Par classe</h2>
           <div className="h-52">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={byClass}>
@@ -245,30 +244,30 @@ export function LedgerPage() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search pupil name…"
-            aria-label="Search pupil name"
+            placeholder="Rechercher un nom d'élève…"
+            aria-label="Rechercher un nom d'élève"
             className="focus-ring w-56 rounded-sm border border-border-strong bg-surface px-3 py-2 text-sm text-ink-900"
           />
           <select
             value={status}
             onChange={(e) => setStatus(e.target.value as PaymentStatus | "")}
-            aria-label="Filter by payment status"
+            aria-label="Filtrer par statut de paiement"
             className="focus-ring rounded-sm border border-border-strong bg-surface px-3 py-2 text-sm text-ink-900"
           >
-            <option value="">All statuses</option>
+            <option value="">Tous les statuts</option>
             {PAYMENT_STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {PAYMENT_STATUS_LABELS[s]}
               </option>
             ))}
           </select>
           <select
             value={classId}
             onChange={(e) => setClassId(e.target.value)}
-            aria-label="Filter by class"
+            aria-label="Filtrer par classe"
             className="focus-ring rounded-sm border border-border-strong bg-surface px-3 py-2 text-sm text-ink-900"
           >
-            <option value="">All classes</option>
+            <option value="">Toutes les classes</option>
             {(classesQuery.data ?? []).map((c) => (
               <option key={c.id} value={c.id}>
                 {c.name}
@@ -277,7 +276,7 @@ export function LedgerPage() {
           </select>
         </div>
         <Button variant="secondary" size="sm" onClick={() => exportCsv(rows, period)} disabled={rows.length === 0}>
-          Export CSV
+          Exporter en CSV
         </Button>
       </div>
 
@@ -285,17 +284,17 @@ export function LedgerPage() {
         {ledgerQuery.isLoading ? (
           <Spinner />
         ) : rows.length === 0 ? (
-          <EmptyState title="No pupils match these filters" />
+          <EmptyState title="Aucun élève ne correspond à ces filtres" />
         ) : (
           <table className="w-full min-w-[860px] text-sm">
             <thead>
               <tr className="text-left text-xs uppercase tracking-wide text-ink-400">
-                <th scope="col" className="pb-2 font-medium">Pupil</th>
-                <th scope="col" className="pb-2 font-medium">Class</th>
-                <th scope="col" className="pb-2 font-medium">Status</th>
-                <th scope="col" className="pb-2 font-medium">Amount due</th>
-                <th scope="col" className="pb-2 font-medium">Amount paid</th>
-                <th scope="col" className="pb-2 font-medium">Due date</th>
+                <th scope="col" className="pb-2 font-medium">Élève</th>
+                <th scope="col" className="pb-2 font-medium">Classe</th>
+                <th scope="col" className="pb-2 font-medium">Statut</th>
+                <th scope="col" className="pb-2 font-medium">Montant dû</th>
+                <th scope="col" className="pb-2 font-medium">Montant payé</th>
+                <th scope="col" className="pb-2 font-medium">Date d'échéance</th>
                 <th scope="col" className="pb-2 font-medium"></th>
               </tr>
             </thead>
@@ -311,7 +310,7 @@ export function LedgerPage() {
                     <PaymentBadge status={r.status} />
                     {r.isOverdue && (
                       <p className="mt-1 text-[11px] font-medium text-danger-600">
-                        {daysOverdue(r.dueDate)} day{daysOverdue(r.dueDate) === 1 ? "" : "s"} overdue
+                        {daysOverdue(r.dueDate)} jour{daysOverdue(r.dueDate) === 1 ? "" : "s"} de retard
                       </p>
                     )}
                   </td>
@@ -366,9 +365,9 @@ export function LedgerPage() {
                             })
                           }
                           className="focus-ring rounded-sm text-xs font-medium text-success-600 hover:text-success-700"
-                          title="Mark as paid in full"
+                          title="Marquer comme payé intégralement"
                         >
-                          Mark paid
+                          Marquer payé
                         </button>
                       )}
                       <select
@@ -378,7 +377,7 @@ export function LedgerPage() {
                       >
                         {PAYMENT_STATUSES.map((s) => (
                           <option key={s} value={s}>
-                            {s}
+                            {PAYMENT_STATUS_LABELS[s]}
                           </option>
                         ))}
                       </select>

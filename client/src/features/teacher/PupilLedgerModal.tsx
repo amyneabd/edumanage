@@ -5,6 +5,7 @@ import { PaymentBadge } from "../../components/Badge";
 import { Spinner } from "../../components/Feedback";
 import { formatPeriodLabel } from "../../lib/period";
 import { formatCurrency } from "../../lib/currency";
+import { PAYMENT_STATUS_LABELS } from "../../lib/labels";
 import type { PaymentStatus, PupilLedgerRow } from "../../api/types";
 
 const PAYMENT_STATUSES: PaymentStatus[] = ["PAID", "UNPAID", "INCOMPLETE"];
@@ -55,7 +56,7 @@ export function PupilLedgerModal({
     <Modal
       open={!!pupilId}
       onClose={onClose}
-      title={pupilName ? `${pupilName} — Full ledger` : "Full ledger"}
+      title={pupilName ? `${pupilName} — Registre complet` : "Registre complet"}
       maxWidthClassName="max-w-2xl"
     >
       {ledgerQuery.isLoading || !ledger ? (
@@ -73,26 +74,26 @@ export function PupilLedgerModal({
             }
           >
             {balance > 0
-              ? `Owes ${formatCurrency(balance)} overall`
+              ? `Doit ${formatCurrency(balance)} au total`
               : balance < 0
-                ? `${formatCurrency(Math.abs(balance))} credit (paid in advance)` +
+                ? `${formatCurrency(Math.abs(balance))} de crédit (payé en avance)` +
                   (sessionsInAdvance > 0
-                    ? ` — about ${sessionsInAdvance} session${sessionsInAdvance === 1 ? "" : "s"} ahead`
+                    ? ` — soit environ ${sessionsInAdvance} séance${sessionsInAdvance === 1 ? "" : "s"} d'avance`
                     : "")
-                : "All settled"}
+                : "Tout est réglé"}
           </div>
 
           <div className="mt-4 overflow-x-auto">
             <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-ink-400">
-                  <th scope="col" className="pb-2 font-medium">Period</th>
-                  <th scope="col" className="pb-2 font-medium">Present</th>
+                  <th scope="col" className="pb-2 font-medium">Période</th>
+                  <th scope="col" className="pb-2 font-medium">Présent</th>
                   <th scope="col" className="pb-2 font-medium">Absent</th>
-                  <th scope="col" className="pb-2 font-medium">Status</th>
-                  <th scope="col" className="pb-2 font-medium">Amount due</th>
-                  <th scope="col" className="pb-2 font-medium">Amount paid</th>
-                  <th scope="col" className="pb-2 font-medium">Due date</th>
+                  <th scope="col" className="pb-2 font-medium">Statut</th>
+                  <th scope="col" className="pb-2 font-medium">Montant dû</th>
+                  <th scope="col" className="pb-2 font-medium">Montant payé</th>
+                  <th scope="col" className="pb-2 font-medium">Date d'échéance</th>
                   <th scope="col" className="pb-2 font-medium"></th>
                 </tr>
               </thead>
@@ -130,7 +131,7 @@ function LedgerRowView({ row, onChange }: { row: PupilLedgerRow; onChange: (edit
           key={`due-${row.period}-${row.amountDue}`}
           defaultValue={row.amountDue ?? ""}
           placeholder="—"
-          aria-label={`Amount due for ${periodLabel}`}
+          aria-label={`Montant dû pour ${periodLabel}`}
           onBlur={(e) => {
             const val = e.target.value === "" ? null : Number(e.target.value);
             if (val !== row.amountDue) onChange({ amountDue: val });
@@ -144,7 +145,7 @@ function LedgerRowView({ row, onChange }: { row: PupilLedgerRow; onChange: (edit
           min={0}
           key={`paid-${row.period}-${row.amountPaid}`}
           defaultValue={row.amountPaid}
-          aria-label={`Amount paid for ${periodLabel}`}
+          aria-label={`Montant payé pour ${periodLabel}`}
           onBlur={(e) => {
             const val = Number(e.target.value || 0);
             if (val !== row.amountPaid) onChange({ amountPaid: val });
@@ -157,7 +158,7 @@ function LedgerRowView({ row, onChange }: { row: PupilLedgerRow; onChange: (edit
           type="date"
           key={`dd-${row.period}-${row.dueDate}`}
           defaultValue={toDateInputValue(row.dueDate)}
-          aria-label={`Due date for ${periodLabel}`}
+          aria-label={`Date d'échéance pour ${periodLabel}`}
           onBlur={(e) => {
             const val = e.target.value || null;
             if (val !== toDateInputValue(row.dueDate)) onChange({ dueDate: val });
@@ -172,20 +173,20 @@ function LedgerRowView({ row, onChange }: { row: PupilLedgerRow; onChange: (edit
               type="button"
               onClick={() => onChange({ status: "PAID", amountPaid: row.amountDue ?? row.amountPaid })}
               className="focus-ring rounded-sm text-xs font-medium text-success-600 hover:text-success-700"
-              title="Mark as paid in full"
+              title="Marquer comme payé intégralement"
             >
-              Mark paid
+              Marquer payé
             </button>
           )}
           <select
             value={row.status}
-            aria-label={`Status for ${periodLabel}`}
+            aria-label={`Statut pour ${periodLabel}`}
             onChange={(e) => onChange({ status: e.target.value as PaymentStatus })}
             className="focus-ring rounded-sm border border-border-strong bg-surface px-2 py-1 text-xs text-ink-900"
           >
             {PAYMENT_STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s}
+                {PAYMENT_STATUS_LABELS[s]}
               </option>
             ))}
           </select>

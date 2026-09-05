@@ -26,19 +26,19 @@ export function OverviewPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-ink-900">Overview</h1>
-      <p className="mt-1 text-sm text-ink-500">A snapshot of your classes and pupils.</p>
+      <h1 className="text-2xl font-semibold text-ink-900">Aperçu</h1>
+      <p className="mt-1 text-sm text-ink-500">Un aperçu de vos classes et de vos élèves.</p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <StatCard label="Active pupils" value={data.pupilCount} icon={<Users2 className="h-[18px] w-[18px]" />} />
+        <StatCard label="Élèves actifs" value={data.pupilCount} icon={<Users2 className="h-[18px] w-[18px]" />} />
         <StatCard label="Classes" value={data.classCount} icon={<BookOpen className="h-[18px] w-[18px]" />} />
         <StatCard
-          label="Pending requests"
+          label="Demandes en attente"
           value={data.pendingRequests}
-          hint="Waiting to be assigned"
+          hint="En attente d'affectation"
           icon={<Clock className="h-[18px] w-[18px]" />}
         />
-        <StatCard label="Paid this month" value={data.paymentSummary.PAID} icon={<Wallet className="h-[18px] w-[18px]" />} />
+        <StatCard label="Payé ce mois-ci" value={data.paymentSummary.PAID} icon={<Wallet className="h-[18px] w-[18px]" />} />
       </div>
 
       <div className="mt-6">
@@ -53,9 +53,9 @@ export function OverviewPage() {
       <div className="mt-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
         <PaymentHealthCard summary={data.paymentSummary} />
         <Card className="p-6">
-          <h2 className="text-sm font-medium text-ink-700">Class distribution</h2>
+          <h2 className="text-sm font-medium text-ink-700">Répartition des classes</h2>
           {chartData.length === 0 ? (
-            <p className="mt-8 text-center text-sm text-ink-400">Create a class to see distribution.</p>
+            <p className="mt-8 text-center text-sm text-ink-400">Créez une classe pour voir la répartition.</p>
           ) : (
             <div className="h-56">
               <ResponsiveContainer width="100%" height="100%">
@@ -76,8 +76,8 @@ export function OverviewPage() {
 
       <div className="mt-6">
         <Card className="p-6">
-          <h2 className="text-sm font-medium text-ink-700">Teacher ID</h2>
-          <p className="mt-1 text-xs text-ink-400">Share this with pupils so they can request to join your classes.</p>
+          <h2 className="text-sm font-medium text-ink-700">Identifiant enseignant</h2>
+          <p className="mt-1 text-xs text-ink-400">Partagez-le avec les élèves pour qu'ils puissent demander à rejoindre vos classes.</p>
           <div className="mt-4 flex items-center gap-3">
             <span className="rounded-sm border border-border bg-canvas px-4 py-2 font-mono text-lg tracking-widest text-ink-900">
               {data.teacherCode}
@@ -90,7 +90,7 @@ export function OverviewPage() {
               }}
               className="focus-ring rounded-sm text-sm font-medium text-accent-600 hover:text-accent-700"
             >
-              {copied ? "Copied!" : "Copy"}
+              {copied ? "Copié !" : "Copier"}
             </button>
           </div>
         </Card>
