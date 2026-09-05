@@ -16,3 +16,4 @@ dist-ssr
 *.sln
 *.sw?
 .worktrees/
+.superpowers/
