@@ -45,7 +45,7 @@ describe("VacationSessionsPanel", () => {
     fetchCurrentVacationMock.mockResolvedValue(activePeriod);
     fetchVacationSessionsMock.mockResolvedValue([]);
     renderWithClient(<VacationSessionsPanel classId="c1" />);
-    expect(await screen.findByText("No ad-hoc sessions added yet.")).toBeInTheDocument();
+    expect(await screen.findByText("Aucune séance ponctuelle ajoutée pour le moment.")).toBeInTheDocument();
   });
 
   it("lists existing ad-hoc sessions for the class", async () => {

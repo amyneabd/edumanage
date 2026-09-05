@@ -9,13 +9,14 @@ import { Card } from "../../components/Card";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { EmptyState, Spinner } from "../../components/Feedback";
 import type { ClassSummary, Post, PostType } from "../../api/types";
+import { formatDate } from "../../lib/period";
 
-const TYPE_LABELS: Record<PostType, string> = { TEXT: "Post", FILE: "File", EXAM: "Exam" };
+const TYPE_LABELS: Record<PostType, string> = { TEXT: "Publication", FILE: "Fichier", EXAM: "Examen" };
 const TYPE_FILTERS: { value: PostType | "ALL"; label: string }[] = [
-  { value: "ALL", label: "All" },
-  { value: "TEXT", label: "Posts" },
-  { value: "FILE", label: "Files" },
-  { value: "EXAM", label: "Exams" },
+  { value: "ALL", label: "Tout" },
+  { value: "TEXT", label: "Publications" },
+  { value: "FILE", label: "Fichiers" },
+  { value: "EXAM", label: "Examens" },
 ];
 
 function toDateInputValue(iso: string | null): string {
@@ -62,7 +63,7 @@ export function FeedPage() {
         file,
       }),
     onSuccess: () => {
-      toast.success(isExam ? "Exam posted." : "Posted to class feed.");
+      toast.success(isExam ? "Examen publié." : "Publié dans les publications de la classe.");
       setContent("");
       setFile(null);
       setIsExam(false);
@@ -96,7 +97,7 @@ export function FeedPage() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deletePost(id),
     onSuccess: () => {
-      toast.success("Post deleted.");
+      toast.success("Publication supprimée.");
       setDeleteTarget(null);
       invalidatePosts();
     },
@@ -112,7 +113,7 @@ export function FeedPage() {
       <div>
         <h1 className="text-2xl font-semibold text-ink-900">Communication</h1>
         <div className="mt-6">
-          <EmptyState title="Create a class first" description="Posts and exams live inside a class channel." />
+          <EmptyState title="Créez d'abord une classe" description="Les publications et examens se trouvent dans le canal d'une classe." />
         </div>
       </div>
     );
@@ -160,7 +161,7 @@ export function FeedPage() {
           <textarea
             value={content}
             onChange={(e) => setContent(e.target.value)}
-            placeholder={`Post something to ${classes.find((c) => c.id === classId)?.name ?? "this class"}…`}
+            placeholder={`Publiez quelque chose dans ${classes.find((c) => c.id === classId)?.name ?? "cette classe"}…`}
             rows={3}
             className="w-full resize-none rounded-sm border border-border px-3 py-2 text-sm focus-ring"
           />
@@ -179,7 +180,7 @@ export function FeedPage() {
                 onChange={(e) => setIsExam(e.target.checked)}
                 className="rounded-sm focus-ring"
               />
-              This is an exam
+              Ceci est un examen
             </label>
             {isExam && (
               <>
@@ -195,14 +196,14 @@ export function FeedPage() {
                   step="any"
                   value={maxGrade}
                   onChange={(e) => setMaxGrade(e.target.value)}
-                  placeholder="Max grade"
+                  placeholder="Note maximale"
                   className="w-24 rounded-sm border border-border-strong px-2 py-1 text-xs focus-ring"
                 />
               </>
             )}
             <div className="ml-auto">
               <Button type="submit" size="sm" disabled={createMutation.isPending || (!content && !file)}>
-                {createMutation.isPending ? "Posting…" : "Post"}
+                {createMutation.isPending ? "Publication…" : "Publier"}
               </Button>
             </div>
           </div>
@@ -214,7 +215,7 @@ export function FeedPage() {
           type="text"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder="Search posts…"
+          placeholder="Rechercher des publications…"
           className="min-w-[10rem] flex-1 rounded-sm border border-border-strong px-3 py-1.5 text-sm focus-ring"
         />
         <div className="flex items-center gap-1 rounded-sm border border-border p-0.5">
@@ -238,7 +239,7 @@ export function FeedPage() {
         {postsQuery.isLoading ? (
           <Spinner />
         ) : !filteredPosts.length ? (
-          <EmptyState title={posts.length ? "No posts match your filters" : "No posts yet"} />
+          <EmptyState title={posts.length ? "Aucune publication ne correspond à vos filtres" : "Aucune publication pour le moment"} />
         ) : (
           filteredPosts.map((post) => (
             <PostCard
@@ -261,13 +262,13 @@ export function FeedPage() {
 
       <ConfirmDialog
         open={!!deleteTarget}
-        title="Delete this post?"
+        title="Supprimer cette publication ?"
         description={
           deleteTarget?.type === "EXAM"
-            ? "This exam and every pupil submission and grade attached to it will be permanently deleted."
-            : "This can't be undone."
+            ? "Cet examen ainsi que toutes les soumissions et notes des élèves qui y sont associées seront définitivement supprimés."
+            : "Cette action est irréversible."
         }
-        confirmLabel="Delete"
+        confirmLabel="Supprimer"
         isPending={deleteMutation.isPending}
         onClose={() => setDeleteTarget(null)}
         onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget.id)}
@@ -311,8 +312,8 @@ function PostCard({
             {TYPE_LABELS[post.type]}
           </span>
           {post.editedAt && (
-            <span className="text-xs italic text-ink-400" title={`Edited ${new Date(post.editedAt).toLocaleString()}`}>
-              · edited
+            <span className="text-xs italic text-ink-400" title={`Modifié le ${new Date(post.editedAt).toLocaleString()}`}>
+              · modifié
             </span>
           )}
         </div>
@@ -325,7 +326,7 @@ function PostCard({
                 onClick={onEdit}
                 className="rounded-sm text-xs font-medium text-accent-600 hover:text-accent-700 focus-ring"
               >
-                Edit
+                Modifier
               </button>
               <button
                 type="button"
@@ -333,7 +334,7 @@ function PostCard({
                 disabled={deleting}
                 className="rounded-sm text-xs font-medium text-danger-600 hover:text-danger-700 focus-ring disabled:opacity-50"
               >
-                {deleting ? "Deleting…" : "Delete"}
+                {deleting ? "Suppression…" : "Supprimer"}
               </button>
             </div>
           )}
@@ -407,14 +408,14 @@ function PostEditForm({
               step="any"
               value={maxGrade}
               onChange={(e) => setMaxGrade(e.target.value)}
-              placeholder="Max grade"
+              placeholder="Note maximale"
               className="w-24 rounded-sm border border-border-strong px-2 py-1 text-xs focus-ring"
             />
           </>
         )}
         {post.type !== "TEXT" && (
           <label className="flex items-center gap-1 text-xs text-ink-500">
-            Replace file
+            Remplacer le fichier
             <input
               type="file"
               accept="application/pdf,image/*"
@@ -425,7 +426,7 @@ function PostEditForm({
         )}
         <div className="ml-auto flex items-center gap-2">
           <Button type="button" variant="ghost" size="sm" onClick={onCancel} disabled={saving}>
-            Cancel
+            Annuler
           </Button>
           <Button
             type="button"
@@ -440,7 +441,7 @@ function PostEditForm({
               })
             }
           >
-            {saving ? "Saving…" : "Save"}
+            {saving ? "Enregistrement…" : "Enregistrer"}
           </Button>
         </div>
       </div>
@@ -470,7 +471,7 @@ function ExamSubmissions({
     mutationFn: (input: { submissionId: string; grade: number | null; feedback?: string | null }) =>
       gradeSubmission(input.submissionId, { grade: input.grade, feedback: input.feedback }),
     onSuccess: () => {
-      toast.success("Grade saved.");
+      toast.success("Note enregistrée.");
       queryClient.invalidateQueries({ queryKey: ["teacher", "posts", post.classId] });
     },
   });
@@ -479,26 +480,26 @@ function ExamSubmissions({
     <div className="mt-3 border-t border-border pt-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="text-xs text-ink-500">
-          {post.dueDate && <span>Due {new Date(post.dueDate).toLocaleDateString()} · </span>}
-          {submissions.length} of {activeRoster.length} submitted
-          {submissions.length > 0 && <span> · {gradedCount} of {submissions.length} graded</span>}
-          {post.maxGrade != null && <span> · out of {post.maxGrade}</span>}
+          {post.dueDate && <span>Échéance : {formatDate(post.dueDate)} · </span>}
+          {submissions.length} sur {activeRoster.length} soumises
+          {submissions.length > 0 && <span> · {gradedCount} sur {submissions.length} notées</span>}
+          {post.maxGrade != null && <span> · sur {post.maxGrade}</span>}
         </div>
         <button
           type="button"
           onClick={onToggleExpand}
           className="rounded-sm text-xs font-medium text-accent-600 hover:text-accent-700 focus-ring"
         >
-          {expanded ? "Hide roster" : "View & grade"}
+          {expanded ? "Masquer la liste" : "Voir et noter"}
         </button>
       </div>
 
       {expanded && (
         <div className="mt-3 space-y-4">
           <div>
-            <p className="text-xs font-medium text-ink-500">Submitted ({submissions.length})</p>
+            <p className="text-xs font-medium text-ink-500">Soumissions ({submissions.length})</p>
             {submissions.length === 0 ? (
-              <p className="mt-1 text-xs text-ink-400">No submissions yet.</p>
+              <p className="mt-1 text-xs text-ink-400">Aucune soumission pour le moment.</p>
             ) : (
               <ul className="mt-2 space-y-2">
                 {submissions.map((s) => (
@@ -514,9 +515,9 @@ function ExamSubmissions({
             )}
           </div>
           <div>
-            <p className="text-xs font-medium text-ink-500">Missing ({missing.length})</p>
+            <p className="text-xs font-medium text-ink-500">Manquants ({missing.length})</p>
             {missing.length === 0 ? (
-              <p className="mt-1 text-xs text-ink-400">Everyone has submitted.</p>
+              <p className="mt-1 text-xs text-ink-400">Tout le monde a soumis son travail.</p>
             ) : (
               <ul className="mt-1 space-y-1">
                 {missing.map((p) => (
@@ -560,9 +561,9 @@ function SubmissionGradeRow({
               rel="noreferrer"
               className="rounded-sm font-medium text-accent-600 hover:text-accent-700 focus-ring"
             >
-              {submission.pupil?.user.name ?? "Pupil"}
+              {submission.pupil?.user.name ?? "Élève"}
             </a>
-            <span className="text-ink-400"> · {new Date(submission.submittedAt).toLocaleDateString()}</span>
+            <span className="text-ink-400"> · {formatDate(submission.submittedAt)}</span>
           </div>
           <div className="flex items-center gap-2">
             {isGraded ? (
@@ -570,14 +571,14 @@ function SubmissionGradeRow({
                 {submission.grade}{maxGrade != null ? `/${maxGrade}` : ""}
               </span>
             ) : (
-              <span className="rounded-full bg-accent-100 px-2 py-0.5 font-semibold text-accent-600">Ungraded</span>
+              <span className="rounded-full bg-accent-100 px-2 py-0.5 font-semibold text-accent-600">Non noté</span>
             )}
             <button
               type="button"
               onClick={() => setEditing(true)}
               className="rounded-sm font-medium text-accent-600 hover:text-accent-700 focus-ring"
             >
-              {isGraded ? "Edit grade" : "Grade"}
+              {isGraded ? "Modifier la note" : "Noter"}
             </button>
           </div>
         </div>
@@ -589,14 +590,14 @@ function SubmissionGradeRow({
   return (
     <li className="rounded-sm bg-accent-50 px-3 py-2 text-xs" style={{ boxShadow: "inset 3px 0 0 #2563EB" }}>
       <div className="flex items-center justify-between gap-2">
-        <span className="font-medium text-ink-900">{submission.pupil?.user.name ?? "Pupil"}</span>
+        <span className="font-medium text-ink-900">{submission.pupil?.user.name ?? "Élève"}</span>
         <a
           href={submission.fileUrl}
           target="_blank"
           rel="noreferrer"
           className="rounded-sm text-accent-600 hover:text-accent-700 focus-ring"
         >
-          View file
+          Voir le fichier
         </a>
       </div>
       <div className="mt-2 flex items-center gap-2">
@@ -607,7 +608,7 @@ function SubmissionGradeRow({
           step="any"
           value={grade}
           onChange={(e) => setGrade(e.target.value)}
-          placeholder="Grade"
+          placeholder="Note"
           className="w-20 rounded-sm border border-border-strong px-2 py-1 focus-ring"
           autoFocus
         />
@@ -616,13 +617,13 @@ function SubmissionGradeRow({
       <textarea
         value={feedback}
         onChange={(e) => setFeedback(e.target.value)}
-        placeholder="Feedback (optional)"
+        placeholder="Commentaire (facultatif)"
         rows={2}
         className="mt-2 w-full resize-none rounded-sm border border-border-strong px-2 py-1 text-xs focus-ring"
       />
       <div className="mt-2 flex justify-end gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={() => setEditing(false)} disabled={saving}>
-          Cancel
+          Annuler
         </Button>
         <Button
           type="button"
@@ -633,7 +634,7 @@ function SubmissionGradeRow({
             setEditing(false);
           }}
         >
-          {saving ? "Saving…" : "Save grade"}
+          {saving ? "Enregistrement…" : "Enregistrer la note"}
         </Button>
       </div>
     </li>

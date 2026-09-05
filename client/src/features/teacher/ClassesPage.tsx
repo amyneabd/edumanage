@@ -37,6 +37,8 @@ import { EmptyState, Spinner } from "../../components/Feedback";
 import { Input } from "../../components/Input";
 import { Modal } from "../../components/Modal";
 import type { ClassType, PupilRequest, TeacherParentRequest, TeacherSwapRequest } from "../../api/types";
+import { formatDate } from "../../lib/period";
+import { CLASS_TYPE_LABELS } from "../../lib/labels";
 
 const CLASS_TYPES: ClassType[] = ["SCIENCE", "MATH", "INFO", "ECO"];
 
@@ -72,7 +74,7 @@ function RequestCard({
         {...listeners}
         {...attributes}
         className="focus-ring cursor-grab touch-none rounded-sm active:cursor-grabbing"
-        aria-label={`Drag ${request.name} onto a class to enroll, or use the assign menu below`}
+        aria-label={`Faites glisser ${request.name} sur une classe pour l'inscrire, ou utilisez le menu d'affectation ci-dessous`}
       >
         <p className="text-sm font-medium text-ink-900">{request.name}</p>
         <p className="text-xs text-ink-500">{request.email}</p>
@@ -82,7 +84,7 @@ function RequestCard({
       </div>
       {classes.length > 0 && (
         <label className="mt-3 block">
-          <span className="sr-only">Assign {request.name} to a class</span>
+          <span className="sr-only">Affecter {request.name} à une classe</span>
           <select
             defaultValue=""
             disabled={isAssigning}
@@ -92,7 +94,7 @@ function RequestCard({
             className="focus-ring w-full rounded-sm border border-border-strong bg-surface px-2 py-1.5 text-xs text-ink-700"
           >
             <option value="" disabled>
-              Assign to class…
+              Affecter à une classe…
             </option>
             {classes.map((c) => (
               <option key={c.id} value={c.id}>
@@ -135,8 +137,8 @@ function ClassCard({
             <ClassTypeBadge type={type} />
           </div>
           <div className="mt-3 flex items-center justify-between">
-            <p className="text-sm text-ink-500">{pupilCount} pupil{pupilCount === 1 ? "" : "s"}</p>
-            {monthlyFee != null && <p className="text-sm font-medium text-ink-700">{monthlyFee} TND/mo</p>}
+            <p className="text-sm text-ink-500">{pupilCount} élève{pupilCount === 1 ? "" : "s"}</p>
+            {monthlyFee != null && <p className="text-sm font-medium text-ink-700">{monthlyFee} TND/mois</p>}
           </div>
         </Card>
       </Link>
@@ -159,17 +161,17 @@ function SwapRequestRow({
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-border bg-surface px-4 py-3">
       <div>
         <p className="text-sm font-medium text-ink-900">
-          {request.pupilName} <span className="font-normal text-ink-400">misses</span> {request.originClassName}{" "}
-          <span className="font-normal text-ink-400">on</span>{" "}
-          {new Date(request.originDate).toLocaleDateString(undefined, {
+          {request.pupilName} <span className="font-normal text-ink-400">manque</span> {request.originClassName}{" "}
+          <span className="font-normal text-ink-400">le</span>{" "}
+          {formatDate(request.originDate, {
             weekday: "short",
             month: "short",
             day: "numeric",
           })}
         </p>
         <p className="mt-0.5 text-xs text-ink-500">
-          to join {request.targetClassName} on{" "}
-          {new Date(request.targetDate).toLocaleDateString(undefined, {
+          pour rejoindre {request.targetClassName} le{" "}
+          {formatDate(request.targetDate, {
             weekday: "short",
             month: "short",
             day: "numeric",
@@ -180,10 +182,10 @@ function SwapRequestRow({
       <div className="flex items-center gap-2">
         <SwapStatusBadge status={request.status} />
         <Button size="sm" variant="secondary" onClick={onDecline} disabled={isPending}>
-          Decline
+          Refuser
         </Button>
         <Button size="sm" onClick={onApprove} disabled={isPending}>
-          Approve
+          Approuver
         </Button>
       </div>
     </div>
@@ -205,18 +207,18 @@ function ParentRequestRow({
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-border bg-surface px-4 py-3">
       <div>
         <p className="text-sm font-medium text-ink-900">
-          {request.parentName} <span className="font-normal text-ink-400">wants to link to</span> {request.pupilName}
+          {request.parentName} <span className="font-normal text-ink-400">veut se lier à</span> {request.pupilName}
         </p>
         <p className="mt-0.5 text-xs text-ink-500">
-          {request.parentEmail} · {request.className ?? "Not yet assigned to a class"}
+          {request.parentEmail} · {request.className ?? "Pas encore affecté à une classe"}
         </p>
       </div>
       <div className="flex items-center gap-2">
         <Button size="sm" variant="secondary" onClick={onDecline} disabled={isPending}>
-          Decline
+          Refuser
         </Button>
         <Button size="sm" onClick={onApprove} disabled={isPending}>
-          Approve
+          Approuver
         </Button>
       </div>
     </div>
@@ -239,7 +241,7 @@ export function VacationBanner() {
   const startMutation = useMutation({
     mutationFn: () => startVacationApi(startDate, endDate),
     onSuccess: () => {
-      toast.success("Vacation mode started.");
+      toast.success("Mode vacances activé.");
       setPickerOpen(false);
       setStartDate("");
       setEndDate("");
@@ -250,7 +252,7 @@ export function VacationBanner() {
   const endMutation = useMutation({
     mutationFn: () => endVacation(),
     onSuccess: () => {
-      toast.success("Vacation mode ended. Weekly schedules have resumed.");
+      toast.success("Mode vacances désactivé. Les emplois du temps hebdomadaires ont repris.");
       invalidate();
     },
   });
@@ -263,21 +265,21 @@ export function VacationBanner() {
       {period ? (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-medium text-ink-700">Vacation mode is active</h2>
+            <h2 className="text-sm font-medium text-ink-700">Mode vacances actif</h2>
             <p className="mt-1 text-xs text-ink-500">
-              {new Date(`${period.startDate.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, {
+              {formatDate(`${period.startDate.slice(0, 10)}T00:00:00`, {
                 month: "short",
                 day: "numeric",
               })}{" "}
               –{" "}
-              {new Date(`${period.endDate.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, {
+              {formatDate(`${period.endDate.slice(0, 10)}T00:00:00`, {
                 month: "short",
                 day: "numeric",
               })}
             </p>
           </div>
           <Button size="sm" variant="secondary" onClick={() => endMutation.mutate()} disabled={endMutation.isPending}>
-            {endMutation.isPending ? "Ending…" : "End vacation mode"}
+            {endMutation.isPending ? "Désactivation…" : "Désactiver le mode vacances"}
           </Button>
         </div>
       ) : pickerOpen ? (
@@ -290,7 +292,7 @@ export function VacationBanner() {
         >
           <div>
             <label htmlFor="vacation-start" className="text-xs font-medium text-ink-700">
-              Start date
+              Date de début
             </label>
             <input
               id="vacation-start"
@@ -303,7 +305,7 @@ export function VacationBanner() {
           </div>
           <div>
             <label htmlFor="vacation-end" className="text-xs font-medium text-ink-700">
-              End date
+              Date de fin
             </label>
             <input
               id="vacation-end"
@@ -315,22 +317,22 @@ export function VacationBanner() {
             />
           </div>
           <Button size="sm" type="submit" disabled={startMutation.isPending}>
-            {startMutation.isPending ? "Starting…" : "Start"}
+            {startMutation.isPending ? "Activation…" : "Activer"}
           </Button>
           <Button size="sm" variant="secondary" type="button" onClick={() => setPickerOpen(false)}>
-            Cancel
+            Annuler
           </Button>
         </form>
       ) : (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-sm font-medium text-ink-700">Vacation mode</h2>
+            <h2 className="text-sm font-medium text-ink-700">Mode vacances</h2>
             <p className="mt-1 text-xs text-ink-500">
-              Suspend the weekly schedule for a date range and pick one-off sessions per class instead.
+              Suspendez l'emploi du temps hebdomadaire pour une période donnée et choisissez des séances ponctuelles pour chaque classe à la place.
             </p>
           </div>
           <Button size="sm" variant="secondary" onClick={() => setPickerOpen(true)}>
-            Start vacation mode
+            Activer le mode vacances
           </Button>
         </div>
       )}
@@ -375,7 +377,7 @@ export function ClassesPage() {
   const approveSwapMutation = useMutation({
     mutationFn: (id: string) => approveSwapRequest(id),
     onSuccess: () => {
-      toast.success("Swap request approved.");
+      toast.success("Demande d'échange approuvée.");
       invalidateSwapRequests();
     },
   });
@@ -394,7 +396,7 @@ export function ClassesPage() {
   const approveParentMutation = useMutation({
     mutationFn: (id: string) => approveParentRequest(id),
     onSuccess: () => {
-      toast.success("Parent link approved.");
+      toast.success("Lien parent approuvé.");
       invalidateParentRequests();
     },
   });
@@ -407,7 +409,7 @@ export function ClassesPage() {
   const createMutation = useMutation({
     mutationFn: () => createClass(name, type, monthlyFee === "" ? null : Number(monthlyFee)),
     onSuccess: () => {
-      toast.success("Class created.");
+      toast.success("Classe créée.");
       setModalOpen(false);
       setName("");
       setMonthlyFee("");
@@ -418,7 +420,7 @@ export function ClassesPage() {
   const assignMutation = useMutation({
     mutationFn: ({ pupilId, classId }: { pupilId: string; classId: string }) => assignPupilRequest(pupilId, classId),
     onSuccess: () => {
-      toast.success("Pupil enrolled.");
+      toast.success("Élève inscrit.");
       invalidateAll();
     },
   });
@@ -446,24 +448,24 @@ export function ClassesPage() {
       <div>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-ink-900">Class management</h1>
+            <h1 className="text-2xl font-semibold text-ink-900">Gestion des classes</h1>
             <p className="mt-1 text-sm text-ink-500">
-            Drag a pupil request onto a class to enroll them, or use the assign menu on each card.
+            Faites glisser une demande d'élève sur une classe pour l'inscrire, ou utilisez le menu d'affectation sur chaque carte.
           </p>
           </div>
           <Button onClick={() => setModalOpen(true)}>
             <Plus className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-            New class
+            Nouvelle classe
           </Button>
         </div>
 
         <VacationBanner />
 
         <section className="mt-6">
-          <h2 className="text-sm font-medium text-ink-700">Pending requests</h2>
+          <h2 className="text-sm font-medium text-ink-700">Demandes en attente</h2>
           {requests.length === 0 ? (
             <div className="mt-2">
-              <EmptyState title="No pending pupil requests" description="New sign-ups will appear here." />
+              <EmptyState title="Aucune demande d'élève en attente" description="Les nouvelles inscriptions apparaîtront ici." />
             </div>
           ) : (
             <div className="mt-2 flex flex-wrap gap-3">
@@ -478,8 +480,8 @@ export function ClassesPage() {
                   <button
                     onClick={() => rejectMutation.mutate(r.pupilId)}
                     className="focus-ring absolute -right-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-danger-600 text-white hover:bg-danger-700 group-hover:flex"
-                    title="Reject request"
-                    aria-label={`Reject ${r.name}'s request`}
+                    title="Rejeter la demande"
+                    aria-label={`Rejeter la demande de ${r.name}`}
                   >
                     <X className="h-3 w-3" strokeWidth={1.8} aria-hidden="true" />
                   </button>
@@ -490,14 +492,14 @@ export function ClassesPage() {
         </section>
 
         <section className="mt-8">
-          <h2 className="text-sm font-medium text-ink-700">Session swap requests</h2>
+          <h2 className="text-sm font-medium text-ink-700">Demandes d'échange de séance</h2>
           {swapRequestsQuery.isLoading ? (
             <Spinner />
           ) : swapRequests.length === 0 ? (
             <div className="mt-2">
               <EmptyState
-                title="No pending swap requests"
-                description="Pupils requesting to swap into another class's session will appear here."
+                title="Aucune demande d'échange en attente"
+                description="Les élèves demandant à échanger vers la séance d'une autre classe apparaîtront ici."
               />
             </div>
           ) : (
@@ -516,14 +518,14 @@ export function ClassesPage() {
         </section>
 
         <section className="mt-8">
-          <h2 className="text-sm font-medium text-ink-700">Parent link requests</h2>
+          <h2 className="text-sm font-medium text-ink-700">Demandes de lien parent</h2>
           {parentRequestsQuery.isLoading ? (
             <Spinner />
           ) : parentRequests.length === 0 ? (
             <div className="mt-2">
               <EmptyState
-                title="No pending parent requests"
-                description="Parents requesting to link to a pupil account will appear here."
+                title="Aucune demande de parent en attente"
+                description="Les parents demandant à se lier à un compte élève apparaîtront ici."
               />
             </div>
           ) : (
@@ -545,7 +547,7 @@ export function ClassesPage() {
           <h2 className="text-sm font-medium text-ink-700">Classes</h2>
           {classes.length === 0 ? (
             <div className="mt-2">
-              <EmptyState title="No classes yet" description="Create your first class to get started." />
+              <EmptyState title="Aucune classe pour le moment" description="Créez votre première classe pour commencer." />
             </div>
           ) : (
             <div className="mt-2 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -564,7 +566,7 @@ export function ClassesPage() {
         </section>
       </div>
 
-      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="New class">
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Nouvelle classe">
         <form
           className="space-y-4"
           onSubmit={(e) => {
@@ -573,14 +575,14 @@ export function ClassesPage() {
           }}
         >
           <div>
-            <label htmlFor="new-class-name" className="text-sm font-medium text-ink-700">Class name</label>
+            <label htmlFor="new-class-name" className="text-sm font-medium text-ink-700">Nom de la classe</label>
             <Input
               id="new-class-name"
               required
               aria-required="true"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Math A - Evenings"
+              placeholder="ex. Maths A - Soirs"
             />
           </div>
           <div>
@@ -593,25 +595,25 @@ export function ClassesPage() {
             >
               {CLASS_TYPES.map((t) => (
                 <option key={t} value={t}>
-                  {t}
+                  {CLASS_TYPE_LABELS[t]}
                 </option>
               ))}
             </select>
           </div>
           <div>
-            <label htmlFor="new-class-monthly-fee" className="text-sm font-medium text-ink-700">Monthly fee (optional)</label>
+            <label htmlFor="new-class-monthly-fee" className="text-sm font-medium text-ink-700">Frais mensuels (facultatif)</label>
             <Input
               id="new-class-monthly-fee"
               type="number"
               min={0}
               value={monthlyFee}
               onChange={(e) => setMonthlyFee(e.target.value)}
-              placeholder="e.g. 150"
+              placeholder="ex. 150"
             />
-            <p className="mt-1 text-xs text-ink-400">Used as the default amount due each month in the Ledger.</p>
+            <p className="mt-1 text-xs text-ink-400">Utilisé comme montant dû par défaut chaque mois dans le Registre.</p>
           </div>
           <Button type="submit" className="w-full" disabled={createMutation.isPending}>
-            {createMutation.isPending ? "Creating…" : "Create class"}
+            {createMutation.isPending ? "Création…" : "Créer la classe"}
           </Button>
         </form>
       </Modal>

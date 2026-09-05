@@ -23,15 +23,15 @@ describe("VacationBanner", () => {
   it("shows the start button when no vacation period is active", async () => {
     fetchCurrentVacationMock.mockResolvedValue(null);
     renderWithClient(<VacationBanner />);
-    expect(await screen.findByText("Start vacation mode")).toBeInTheDocument();
+    expect(await screen.findByText("Activer le mode vacances")).toBeInTheDocument();
   });
 
   it("opens the date-range form when Start vacation mode is clicked", async () => {
     fetchCurrentVacationMock.mockResolvedValue(null);
     renderWithClient(<VacationBanner />);
-    fireEvent.click(await screen.findByText("Start vacation mode"));
-    expect(await screen.findByLabelText("Start date")).toBeInTheDocument();
-    expect(screen.getByLabelText("End date")).toBeInTheDocument();
+    fireEvent.click(await screen.findByText("Activer le mode vacances"));
+    expect(await screen.findByLabelText("Date de début")).toBeInTheDocument();
+    expect(screen.getByLabelText("Date de fin")).toBeInTheDocument();
   });
 
   it("shows the active range and an End button when a period is active", async () => {
@@ -45,7 +45,7 @@ describe("VacationBanner", () => {
     };
     fetchCurrentVacationMock.mockResolvedValue(period);
     renderWithClient(<VacationBanner />);
-    expect(await screen.findByText("Vacation mode is active")).toBeInTheDocument();
-    expect(screen.getByText("End vacation mode")).toBeInTheDocument();
+    expect(await screen.findByText("Mode vacances actif")).toBeInTheDocument();
+    expect(screen.getByText("Désactiver le mode vacances")).toBeInTheDocument();
   });
 });

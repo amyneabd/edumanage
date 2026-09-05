@@ -84,7 +84,7 @@ function GoalRow({ goal, editable }: { goal: Goal; editable: boolean }) {
             type="button"
             onClick={() => progressMutation.mutate(-1)}
             disabled={goal.currentCount <= 0}
-            aria-label={`Decrease progress for "${goal.title}"`}
+            aria-label={`Diminuer la progression de « ${goal.title} »`}
             className="focus-ring relative flex h-6 w-6 items-center justify-center rounded-sm border border-border-strong text-ink-500 after:absolute after:inset-x-0 after:-top-[10px] after:-bottom-[10px] after:content-[''] hover:bg-canvas disabled:opacity-30"
           >
             <Minus className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
@@ -93,7 +93,7 @@ function GoalRow({ goal, editable }: { goal: Goal; editable: boolean }) {
             type="button"
             onClick={() => progressMutation.mutate(1)}
             disabled={goal.currentCount >= (goal.targetCount ?? 0)}
-            aria-label={`Increase progress for "${goal.title}"`}
+            aria-label={`Augmenter la progression de « ${goal.title} »`}
             className="focus-ring relative flex h-6 w-6 items-center justify-center rounded-sm border border-border-strong text-ink-500 after:absolute after:inset-x-0 after:-top-[10px] after:-bottom-[10px] after:content-[''] hover:bg-canvas disabled:opacity-30"
           >
             <Plus className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
@@ -111,8 +111,8 @@ function GoalRow({ goal, editable }: { goal: Goal; editable: boolean }) {
           type="button"
           onClick={() => deleteMutation.mutate()}
           className="focus-ring hidden h-6 w-6 shrink-0 items-center justify-center rounded-full text-ink-400 hover:bg-danger-50 hover:text-danger-600 group-hover:flex"
-          title="Remove goal"
-          aria-label={`Remove goal "${goal.title}"`}
+          title="Supprimer l'objectif"
+          aria-label={`Supprimer l'objectif « ${goal.title} »`}
         >
           <X className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
         </button>
@@ -164,9 +164,9 @@ export function GoalsPanel() {
     <Card className="p-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-sm font-medium text-ink-700">Monthly goals</h2>
+          <h2 className="text-sm font-medium text-ink-700">Objectifs mensuels</h2>
           <p className="mt-0.5 text-xs text-ink-400">
-            {isCurrent ? "Set what you want to get done this month." : "Recap of what got done."}
+            {isCurrent ? "Définissez ce que vous souhaitez accomplir ce mois-ci." : "Récapitulatif de ce qui a été accompli."}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -174,8 +174,8 @@ export function GoalsPanel() {
             type="button"
             onClick={() => goToPeriod(shiftPeriod(period, -1))}
             className="focus-ring flex h-11 w-11 items-center justify-center rounded-sm border border-border-strong text-ink-500 hover:bg-canvas"
-            title="Previous month"
-            aria-label="Previous month"
+            title="Mois précédent"
+            aria-label="Mois précédent"
           >
             <ChevronLeft className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
           </button>
@@ -187,8 +187,8 @@ export function GoalsPanel() {
             onClick={() => goToPeriod(shiftPeriod(period, 1))}
             disabled={isCurrent}
             className="focus-ring flex h-11 w-11 items-center justify-center rounded-sm border border-border-strong text-ink-500 hover:bg-canvas disabled:opacity-30"
-            title="Next month"
-            aria-label="Next month"
+            title="Mois suivant"
+            aria-label="Mois suivant"
           >
             <ChevronRight className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
           </button>
@@ -203,14 +203,14 @@ export function GoalsPanel() {
             <div className="mt-4 flex items-baseline gap-3">
               <span className="text-2xl font-semibold text-ink-900">{percent}%</span>
               <span className="text-sm text-ink-500">
-                {achieved} of {total} goal{total === 1 ? "" : "s"} achieved
+                {achieved} sur {total} objectif{total === 1 ? "" : "s"} atteint{total === 1 ? "" : "s"}
               </span>
             </div>
           )}
 
           {goals.length === 0 ? (
             <p className="mt-6 text-center text-sm text-ink-400">
-              {isCurrent ? "No goals yet — add your first one below." : "No goals were set for this month."}
+              {isCurrent ? "Aucun objectif pour le moment — ajoutez le premier ci-dessous." : "Aucun objectif n'a été défini pour ce mois."}
             </p>
           ) : (
             <ul className="mt-4 divide-y divide-border">
@@ -233,7 +233,7 @@ export function GoalsPanel() {
                 <input
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  placeholder="e.g. Enroll 5 new pupils"
+                  placeholder="ex. Inscrire 5 nouveaux élèves"
                   className="focus-ring flex-1 rounded-sm border border-border-strong bg-surface px-3 py-2 text-sm text-ink-900"
                 />
                 {hasTarget && (
@@ -247,7 +247,7 @@ export function GoalsPanel() {
                   />
                 )}
                 <Button type="submit" size="sm" disabled={createMutation.isPending || !title.trim()}>
-                  Add
+                  Ajouter
                 </Button>
               </div>
               <label className="flex items-center gap-1.5 text-xs text-ink-500">
@@ -257,7 +257,7 @@ export function GoalsPanel() {
                   onChange={(e) => setHasTarget(e.target.checked)}
                   className="focus-ring h-3.5 w-3.5 rounded border-border-strong"
                 />
-                Track as a number (e.g. reach a target count)
+                Suivre sous forme de nombre (ex. atteindre un objectif chiffré)
               </label>
             </form>
           )}

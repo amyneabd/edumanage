@@ -22,9 +22,10 @@ import { Card } from "../../components/Card";
 import { ClassTypeBadge, PaymentBadge } from "../../components/Badge";
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { EmptyState, Spinner } from "../../components/Feedback";
-import { currentPeriod, DAY_NAMES } from "../../lib/period";
+import { currentPeriod, DAY_NAMES, formatDate } from "../../lib/period";
 import { PupilDetailModal } from "./PupilDetailModal";
 import type { PaymentStatus, PupilSummary, ScheduleSlot, VacationSessionEntry } from "../../api/types";
+import { PAYMENT_STATUS_LABELS } from "../../lib/labels";
 
 const PAYMENT_STATUSES: PaymentStatus[] = ["PAID", "UNPAID", "INCOMPLETE"];
 
@@ -47,7 +48,7 @@ export function VacationSessionsPanel({ classId }: { classId: string }) {
   const addMutation = useMutation({
     mutationFn: () => addVacationSession(classId, { date, startTime, endTime }),
     onSuccess: () => {
-      toast.success("Ad-hoc session added.");
+      toast.success("Séance ponctuelle ajoutée.");
       setDate("");
       invalidate();
     },
@@ -65,15 +66,15 @@ export function VacationSessionsPanel({ classId }: { classId: string }) {
 
   return (
     <Card className="mt-6 p-5">
-      <h2 className="text-sm font-medium text-ink-700">Vacation sessions</h2>
+      <h2 className="text-sm font-medium text-ink-700">Séances de vacances</h2>
       <p className="mt-1 text-xs text-ink-400">
-        One-off sessions for this class between{" "}
-        {new Date(`${period.startDate.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, {
+        Séances ponctuelles pour cette classe entre{" "}
+        {formatDate(`${period.startDate.slice(0, 10)}T00:00:00`, {
           month: "short",
           day: "numeric",
         })}{" "}
-        and{" "}
-        {new Date(`${period.endDate.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, {
+        et{" "}
+        {formatDate(`${period.endDate.slice(0, 10)}T00:00:00`, {
           month: "short",
           day: "numeric",
         })}
@@ -84,7 +85,7 @@ export function VacationSessionsPanel({ classId }: { classId: string }) {
         {sessions.map((s) => (
           <div key={s.id} className="flex items-center gap-2">
             <span className="w-28 text-xs text-ink-700">
-              {new Date(`${s.date.slice(0, 10)}T00:00:00`).toLocaleDateString(undefined, {
+              {formatDate(`${s.date.slice(0, 10)}T00:00:00`, {
                 weekday: "short",
                 month: "short",
                 day: "numeric",
@@ -96,13 +97,13 @@ export function VacationSessionsPanel({ classId }: { classId: string }) {
             <button
               onClick={() => removeMutation.mutate(s.id)}
               className="focus-ring ml-auto rounded-sm text-ink-400 hover:text-danger-600"
-              aria-label={`Remove vacation session on ${s.date}`}
+              aria-label={`Supprimer la séance de vacances du ${s.date}`}
             >
               <X className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
             </button>
           </div>
         ))}
-        {sessions.length === 0 && <p className="text-xs text-ink-400">No ad-hoc sessions added yet.</p>}
+        {sessions.length === 0 && <p className="text-xs text-ink-400">Aucune séance ponctuelle ajoutée pour le moment.</p>}
       </div>
 
       <form
@@ -134,7 +135,7 @@ export function VacationSessionsPanel({ classId }: { classId: string }) {
           className="focus-ring w-24 rounded-sm border border-border-strong bg-surface px-2 py-1.5 text-xs text-ink-700"
         />
         <Button size="sm" type="submit" disabled={addMutation.isPending || !date}>
-          {addMutation.isPending ? "Adding…" : "Add session"}
+          {addMutation.isPending ? "Ajout…" : "Ajouter une séance"}
         </Button>
       </form>
     </Card>
@@ -165,7 +166,7 @@ export function ClassDetailPage() {
   const removeMutation = useMutation({
     mutationFn: (pupilId: string) => deletePupilFromClass(id!, pupilId),
     onSuccess: () => {
-      toast.success("Pupil removed from class.");
+      toast.success("Élève retiré de la classe.");
       setRemoveTarget(null);
       invalidate();
     },
@@ -180,7 +181,7 @@ export function ClassDetailPage() {
   const scheduleMutation = useMutation({
     mutationFn: () => updateSchedule(id!, slots),
     onSuccess: () => {
-      toast.success("Schedule saved.");
+      toast.success("Emploi du temps enregistré.");
       invalidate();
     },
   });
@@ -202,7 +203,7 @@ export function ClassDetailPage() {
   const approveParentMutation = useMutation({
     mutationFn: (requestId: string) => approveParentRequest(requestId),
     onSuccess: () => {
-      toast.success("Parent link approved.");
+      toast.success("Lien parent approuvé.");
       invalidateParentRequests();
     },
   });
@@ -221,14 +222,14 @@ export function ClassDetailPage() {
         className="focus-ring inline-flex items-center gap-1 rounded-sm text-sm font-medium text-accent-600 hover:text-accent-700"
       >
         <ArrowLeft className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-        Back to classes
+        Retour aux classes
       </Link>
 
       <div className="mt-2 flex flex-wrap items-center gap-3">
         <h1 className="text-2xl font-semibold text-ink-900">{klass.name}</h1>
         <ClassTypeBadge type={klass.type} />
         <label className="flex items-center gap-1.5 text-sm text-ink-500">
-          Monthly fee
+          Frais mensuels
           <span className="flex items-center rounded-sm border border-border-strong px-2 py-1 focus-within:ring-2 focus-within:ring-accent-600 focus-within:ring-offset-2 focus-within:ring-offset-surface">
             <input
               type="number"
@@ -249,18 +250,18 @@ export function ClassDetailPage() {
 
       <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
         <Card className="p-5 lg:col-span-2">
-          <h2 className="text-sm font-medium text-ink-700">Members ({klass.pupils.length})</h2>
+          <h2 className="text-sm font-medium text-ink-700">Membres ({klass.pupils.length})</h2>
           {klass.pupils.length === 0 ? (
             <div className="mt-3">
-              <EmptyState title="No pupils yet" description="Drag a request into this class from Class Management." />
+              <EmptyState title="Aucun élève pour le moment" description="Faites glisser une demande dans cette classe depuis la Gestion des classes." />
             </div>
           ) : (
             <div className="mt-3 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-ink-400">
-                  <th scope="col" className="pb-2 font-medium">Name</th>
-                  <th scope="col" className="pb-2 font-medium">Payment ({period})</th>
+                  <th scope="col" className="pb-2 font-medium">Nom</th>
+                  <th scope="col" className="pb-2 font-medium">Paiement ({period})</th>
                   <th scope="col" className="pb-2 font-medium"></th>
                 </tr>
               </thead>
@@ -274,7 +275,7 @@ export function ClassDetailPage() {
                           type="button"
                           onClick={() => setSelectedPupilId(p.userId)}
                           className="focus-ring rounded-sm text-left hover:opacity-80"
-                          title="View pupil details and attendance"
+                          title="Voir les détails et les présences de l'élève"
                         >
                           <p className="font-medium text-accent-600 hover:text-accent-700">{p.user.name}</p>
                           <p className="text-xs text-ink-500">{p.user.email}</p>
@@ -290,7 +291,7 @@ export function ClassDetailPage() {
                         >
                           {PAYMENT_STATUSES.map((s) => (
                             <option key={s} value={s}>
-                              {s}
+                              {PAYMENT_STATUS_LABELS[s]}
                             </option>
                           ))}
                         </select>
@@ -303,7 +304,7 @@ export function ClassDetailPage() {
                           onClick={() => setRemoveTarget(p)}
                           className="focus-ring rounded-sm text-xs font-medium text-danger-600 hover:text-danger-700"
                         >
-                          Remove
+                          Retirer
                         </button>
                       </td>
                     </tr>
@@ -316,8 +317,8 @@ export function ClassDetailPage() {
         </Card>
 
         <Card className="p-5">
-          <h2 className="text-sm font-medium text-ink-700">Class schedule</h2>
-          <p className="mt-1 text-xs text-ink-400">Shared with pupils in this class.</p>
+          <h2 className="text-sm font-medium text-ink-700">Emploi du temps de la classe</h2>
+          <p className="mt-1 text-xs text-ink-400">Partagé avec les élèves de cette classe.</p>
 
           <div className="mt-3 space-y-2">
             {slots.map((slot, i) => (
@@ -361,7 +362,7 @@ export function ClassDetailPage() {
                 <button
                   onClick={() => setSlots(slots.filter((_, idx) => idx !== i))}
                   className="focus-ring rounded-sm text-ink-400 hover:text-danger-600"
-                  aria-label={`Remove ${DAY_NAMES[slot.dayOfWeek]} ${slot.startTime}–${slot.endTime} time slot`}
+                  aria-label={`Supprimer le créneau du ${DAY_NAMES[slot.dayOfWeek]} ${slot.startTime}–${slot.endTime}`}
                 >
                   <X className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
                 </button>
@@ -375,10 +376,10 @@ export function ClassDetailPage() {
               className="focus-ring inline-flex items-center gap-1 rounded-sm text-xs font-medium text-accent-600 hover:text-accent-700"
             >
               <Plus className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
-              Add time slot
+              Ajouter un créneau
             </button>
             <Button size="sm" onClick={() => scheduleMutation.mutate()} disabled={scheduleMutation.isPending}>
-              {scheduleMutation.isPending ? "Saving…" : "Save schedule"}
+              {scheduleMutation.isPending ? "Enregistrement…" : "Enregistrer l'emploi du temps"}
             </Button>
           </div>
         </Card>
@@ -387,11 +388,11 @@ export function ClassDetailPage() {
       <VacationSessionsPanel classId={id!} />
 
       <Card className="mt-6 p-5">
-        <h2 className="text-sm font-medium text-ink-700">Upcoming visitors</h2>
-        <p className="mt-1 text-xs text-ink-400">Pupils approved to sit in on a future session of this class.</p>
+        <h2 className="text-sm font-medium text-ink-700">Visiteurs à venir</h2>
+        <p className="mt-1 text-xs text-ink-400">Élèves autorisés à assister à une prochaine séance de cette classe.</p>
         {(klass.swapVisitors?.length ?? 0) === 0 ? (
           <div className="mt-3">
-            <EmptyState title="No upcoming visitors" description="Approved one-off session requests will show here." />
+            <EmptyState title="Aucun visiteur à venir" description="Les demandes de séance ponctuelle approuvées s'afficheront ici." />
           </div>
         ) : (
           <ul className="mt-3 divide-y divide-border">
@@ -403,7 +404,7 @@ export function ClassDetailPage() {
                 </div>
                 <div className="text-right">
                   <p className="text-sm text-ink-700">
-                    {new Date(v.targetDate).toLocaleDateString(undefined, {
+                    {formatDate(v.targetDate, {
                       weekday: "short",
                       month: "short",
                       day: "numeric",
@@ -418,11 +419,11 @@ export function ClassDetailPage() {
       </Card>
 
       <Card className="mt-6 p-5">
-        <h2 className="text-sm font-medium text-ink-700">Parent link requests</h2>
-        <p className="mt-1 text-xs text-ink-400">Parents requesting to follow a pupil in this class.</p>
+        <h2 className="text-sm font-medium text-ink-700">Demandes de lien parent</h2>
+        <p className="mt-1 text-xs text-ink-400">Parents demandant à suivre un élève dans cette classe.</p>
         {!parentRequestsQuery.data || parentRequestsQuery.data.length === 0 ? (
           <div className="mt-3">
-            <EmptyState title="No pending requests" description="Parent link requests for this class will show here." />
+            <EmptyState title="Aucune demande en attente" description="Les demandes de lien parent pour cette classe s'afficheront ici." />
           </div>
         ) : (
           <ul className="mt-3 divide-y divide-border">
@@ -441,14 +442,14 @@ export function ClassDetailPage() {
                     onClick={() => declineParentMutation.mutate(r.id)}
                     disabled={declineParentMutation.isPending || approveParentMutation.isPending}
                   >
-                    Decline
+                    Refuser
                   </Button>
                   <Button
                     size="sm"
                     onClick={() => approveParentMutation.mutate(r.id)}
                     disabled={declineParentMutation.isPending || approveParentMutation.isPending}
                   >
-                    Approve
+                    Approuver
                   </Button>
                 </div>
               </li>
@@ -461,9 +462,9 @@ export function ClassDetailPage() {
 
       <ConfirmDialog
         open={!!removeTarget}
-        title="Remove pupil from class?"
-        description={removeTarget ? `${removeTarget.user.name} will lose access to this class's feed and schedule.` : undefined}
-        confirmLabel="Remove"
+        title="Retirer l'élève de la classe ?"
+        description={removeTarget ? `${removeTarget.user.name} perdra l'accès aux publications et à l'emploi du temps de cette classe.` : undefined}
+        confirmLabel="Retirer"
         isPending={removeMutation.isPending}
         onClose={() => setRemoveTarget(null)}
         onConfirm={() => removeTarget && removeMutation.mutate(removeTarget.userId)}
