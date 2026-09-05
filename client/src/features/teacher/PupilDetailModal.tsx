@@ -39,6 +39,7 @@ const DISPLAY_STYLES: Record<AttendanceDay["display"], string> = {
   TODAY: "bg-accent-600 text-white ring-2 ring-accent-100",
   PRESENT: "bg-success-600 text-white hover:bg-success-700",
   ABSENT: "bg-danger-600 text-white hover:bg-danger-700",
+  EXCUSED: "bg-warning-600 text-white hover:bg-warning-700",
   UNMARKED: "border-2 border-dashed border-border-strong text-ink-500 hover:border-accent-600 hover:text-accent-600",
 };
 
@@ -47,6 +48,7 @@ const DISPLAY_LABELS: Record<AttendanceDay["display"], string> = {
   TODAY: "Today's session",
   PRESENT: "Present",
   ABSENT: "Absent",
+  EXCUSED: "Excused",
   UNMARKED: "Not marked yet — click to record",
 };
 
@@ -103,15 +105,17 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
   const stats = useMemo(() => {
     let present = 0;
     let absent = 0;
+    let excused = 0;
     let upcoming = 0;
     let unmarked = 0;
     for (const d of days) {
       if (d.display === "PRESENT") present++;
       else if (d.display === "ABSENT") absent++;
+      else if (d.display === "EXCUSED") excused++;
       else if (d.display === "FUTURE") upcoming++;
       else if (d.display === "UNMARKED") unmarked++;
     }
-    return { present, absent, upcoming, unmarked };
+    return { present, absent, excused, upcoming, unmarked };
   }, [days]);
 
   function handleDayClick(day: AttendanceDay) {
@@ -229,6 +233,9 @@ export function PupilDetailModal({ pupilId, onClose }: { pupilId: string | null;
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full bg-danger-600" /> Absent ({stats.absent})
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <span className="h-2.5 w-2.5 rounded-full bg-warning-600" /> Excused ({stats.excused})
                 </span>
                 <span className="flex items-center gap-1.5">
                   <span className="h-2.5 w-2.5 rounded-full border-2 border-dashed border-border-strong" /> Not marked ({stats.unmarked})
