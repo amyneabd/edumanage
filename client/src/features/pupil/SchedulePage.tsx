@@ -14,7 +14,8 @@ import { Card } from "../../components/Card";
 import { SwapStatusBadge } from "../../components/Badge";
 import { EmptyState, ErrorState, Spinner } from "../../components/Feedback";
 import { ScheduleView } from "../../components/ScheduleView";
-import { DAY_NAMES } from "../../lib/period";
+import { DAY_NAMES, formatDate } from "../../lib/period";
+import { CLASS_TYPE_LABELS } from "../../lib/labels";
 
 function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
@@ -41,7 +42,7 @@ export function SwapRequestForm() {
         reason: reason.trim() || undefined,
       }),
     onSuccess: () => {
-      toast.success("Swap request sent.");
+      toast.success("Demande d'échange envoyée.");
       setOriginDate("");
       setTargetDate("");
       setReason("");
@@ -54,8 +55,8 @@ export function SwapRequestForm() {
   if (classes.length === 0) {
     return (
       <EmptyState
-        title="No other classes to join"
-        description="Your teacher only has the class you're already enrolled in."
+        title="Aucune autre classe à rejoindre"
+        description="Votre enseignant ne propose que la classe où vous êtes déjà inscrit(e)."
       />
     );
   }
@@ -70,7 +71,7 @@ export function SwapRequestForm() {
       }}
     >
       <div>
-        <label htmlFor="swap-request-origin-date" className="text-sm font-medium text-ink-700">Session you'll miss</label>
+        <label htmlFor="swap-request-origin-date" className="text-sm font-medium text-ink-700">Séance que vous allez manquer</label>
         <input
           id="swap-request-origin-date"
           required
@@ -84,7 +85,7 @@ export function SwapRequestForm() {
       </div>
 
       <div>
-        <label htmlFor="swap-request-target-class" className="text-sm font-medium text-ink-700">Class to join</label>
+        <label htmlFor="swap-request-target-class" className="text-sm font-medium text-ink-700">Classe à rejoindre</label>
         <select
           id="swap-request-target-class"
           value={activeClassId}
@@ -93,15 +94,15 @@ export function SwapRequestForm() {
         >
           {classes.map((c) => (
             <option key={c.id} value={c.id}>
-              {c.name} ({c.type})
+              {c.name} ({CLASS_TYPE_LABELS[c.type]})
             </option>
           ))}
         </select>
         {selectedClass && (
           <p className="mt-1 text-xs text-ink-400">
             {selectedClass.scheduleSlots.length === 0
-              ? "No schedule set for this class yet."
-              : `Meets: ${selectedClass.scheduleSlots
+              ? "Aucun emploi du temps défini pour cette classe."
+              : `Horaires : ${selectedClass.scheduleSlots
                   .slice()
                   .sort((a, b) => a.dayOfWeek - b.dayOfWeek || a.startTime.localeCompare(b.startTime))
                   .map((s) => `${DAY_NAMES[s.dayOfWeek]} ${s.startTime}–${s.endTime}`)
@@ -111,7 +112,7 @@ export function SwapRequestForm() {
       </div>
 
       <div>
-        <label htmlFor="swap-request-target-date" className="text-sm font-medium text-ink-700">Date to attend</label>
+        <label htmlFor="swap-request-target-date" className="text-sm font-medium text-ink-700">Date à laquelle assister</label>
         <input
           id="swap-request-target-date"
           required
@@ -125,13 +126,13 @@ export function SwapRequestForm() {
       </div>
 
       <div>
-        <label htmlFor="swap-request-reason" className="text-sm font-medium text-ink-700">Reason (optional)</label>
+        <label htmlFor="swap-request-reason" className="text-sm font-medium text-ink-700">Motif (optionnel)</label>
         <textarea
           id="swap-request-reason"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           rows={2}
-          placeholder="e.g. I'll be away from my usual class that day."
+          placeholder="ex. : je serai absent(e) de ma classe habituelle ce jour-là."
           className="mt-1 w-full rounded-sm border border-border-strong px-3 py-2 text-sm focus-ring"
         />
       </div>
@@ -139,7 +140,7 @@ export function SwapRequestForm() {
       {mutation.isError && <ErrorState message={extractErrorMessage(mutation.error)} />}
 
       <Button type="submit" size="sm" disabled={mutation.isPending || !originDate || !targetDate}>
-        {mutation.isPending ? "Sending…" : "Request swap"}
+        {mutation.isPending ? "Envoi…" : "Demander un échange"}
       </Button>
     </form>
   );
@@ -158,7 +159,7 @@ function MySwapRequests() {
 
   const requests = requestsQuery.data ?? [];
   if (requests.length === 0) {
-    return <EmptyState title="No swap requests yet" description="Requests you send will show up here." />;
+    return <EmptyState title="Aucune demande d'échange pour le moment" description="Les demandes que vous envoyez s'afficheront ici." />;
   }
 
   return (
@@ -169,15 +170,15 @@ function MySwapRequests() {
             <div>
               <p className="text-sm font-medium text-ink-900">{r.targetClassName}</p>
               <p className="mt-1 text-xs text-ink-500">
-                {new Date(r.targetDate).toLocaleDateString(undefined, {
+                {formatDate(r.targetDate, {
                   weekday: "short",
                   month: "short",
                   day: "numeric",
                 })}
               </p>
               <p className="mt-1 text-xs text-ink-400">
-                instead of {r.originClassName} on{" "}
-                {new Date(r.originDate).toLocaleDateString(undefined, {
+                à la place de {r.originClassName} le{" "}
+                {formatDate(r.originDate, {
                   weekday: "short",
                   month: "short",
                   day: "numeric",
@@ -193,7 +194,7 @@ function MySwapRequests() {
                   disabled={cancelMutation.isPending}
                   className="focus-ring rounded-sm text-xs font-medium text-danger-600 hover:text-danger-700"
                 >
-                  Cancel
+                  Annuler
                 </button>
               )}
             </div>
@@ -211,7 +212,7 @@ export function PupilSchedulePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-ink-900">Schedule</h1>
+      <h1 className="text-2xl font-semibold text-ink-900">Emploi du temps</h1>
       <p className="mt-1 text-sm text-ink-500">{data.className}</p>
 
       <div className="mt-6">
@@ -220,9 +221,9 @@ export function PupilSchedulePage() {
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="p-5">
-          <h2 className="text-sm font-medium text-ink-700">Swap a session</h2>
+          <h2 className="text-sm font-medium text-ink-700">Échanger une séance</h2>
           <p className="mt-1 text-xs text-ink-400">
-            Need to swap your usual class for a different one on a particular day? Request it here.
+            Besoin d'échanger votre classe habituelle contre une autre à une date précise ? Faites votre demande ici.
           </p>
           <div className="mt-3">
             <SwapRequestForm />
@@ -230,7 +231,7 @@ export function PupilSchedulePage() {
         </Card>
 
         <Card className="p-5">
-          <h2 className="text-sm font-medium text-ink-700">My swap requests</h2>
+          <h2 className="text-sm font-medium text-ink-700">Mes demandes d'échange</h2>
           <div className="mt-3">
             <MySwapRequests />
           </div>

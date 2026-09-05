@@ -49,10 +49,10 @@ describe("PupilSchedulePage", () => {
 
     await waitFor(() => expect(screen.getByText(/Other Class/)).toBeInTheDocument());
 
-    await user.type(screen.getByLabelText(/session you'll miss/i), "2026-09-07");
-    await user.selectOptions(screen.getByLabelText(/class to join/i), "class-2");
-    await user.type(screen.getByLabelText(/date to attend/i), "2026-09-09");
-    await user.click(screen.getByRole("button", { name: /request swap/i }));
+    await user.type(screen.getByLabelText(/séance que vous allez manquer/i), "2026-09-07");
+    await user.selectOptions(screen.getByLabelText(/classe à rejoindre/i), "class-2");
+    await user.type(screen.getByLabelText(/date à laquelle assister/i), "2026-09-09");
+    await user.click(screen.getByRole("button", { name: /demander un échange/i }));
 
     await waitFor(() =>
       expect(createSwapRequest).toHaveBeenCalledWith({
@@ -85,6 +85,6 @@ describe("PupilSchedulePage", () => {
     renderWithClient(<PupilSchedulePage />);
 
     await waitFor(() => expect(screen.getByText("Other Class")).toBeInTheDocument());
-    expect(screen.getByText("Pending")).toBeInTheDocument();
+    expect(screen.getByText("En attente")).toBeInTheDocument();
   });
 });

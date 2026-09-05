@@ -5,6 +5,7 @@ import { fetchPupilGrades } from "../../api/pupil";
 import { Card } from "../../components/Card";
 import { StatCard } from "../../components/StatCard";
 import { EmptyState, Spinner } from "../../components/Feedback";
+import { formatDate } from "../../lib/period";
 
 function percentTone(percent: number | null): string {
   if (percent === null) return "bg-canvas text-ink-400";
@@ -22,24 +23,24 @@ export function PupilGradesPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-semibold text-ink-900">Grades</h1>
-      <p className="mt-1 text-sm text-ink-500">Your exam results and teacher feedback.</p>
+      <h1 className="text-2xl font-semibold text-ink-900">Notes</h1>
+      <p className="mt-1 text-sm text-ink-500">Vos résultats d'examens et les retours de votre enseignant.</p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <StatCard
-          label="Average score"
+          label="Moyenne"
           value={data?.average !== null && data?.average !== undefined ? `${data.average.toFixed(1)}%` : "—"}
           icon={<Sigma className="h-[18px] w-[18px]" strokeWidth={1.8} />}
           accent="bg-accent-50 text-accent-600"
         />
         <StatCard
-          label="Graded exams"
+          label="Examens notés"
           value={data?.gradedCount ?? 0}
           icon={<CheckCircle2 className="h-[18px] w-[18px]" strokeWidth={1.8} />}
           accent="bg-success-50 text-success-600"
         />
         <StatCard
-          label="Awaiting grade"
+          label="En attente de note"
           value={data?.pendingCount ?? 0}
           icon={<Hourglass className="h-[18px] w-[18px]" strokeWidth={1.8} />}
           accent={(data?.pendingCount ?? 0) > 0 ? "bg-accent-50 text-accent-600" : "bg-canvas text-ink-400"}
@@ -47,10 +48,10 @@ export function PupilGradesPage() {
       </div>
 
       <Card className="mt-4 p-5">
-        <h2 className="text-sm font-medium text-ink-700">Graded exams</h2>
+        <h2 className="text-sm font-medium text-ink-700">Examens notés</h2>
         {grades.length === 0 ? (
           <div className="mt-3">
-            <EmptyState title="No grades yet" description="Your submitted exams will show grades here once your teacher reviews them." />
+            <EmptyState title="Aucune note pour le moment" description="Vos examens soumis afficheront une note ici une fois que votre enseignant les aura corrigés." />
           </div>
         ) : (
           <ul className="mt-3 space-y-3">
@@ -58,10 +59,10 @@ export function PupilGradesPage() {
               <li key={g.submissionId} className="rounded-sm bg-canvas p-3">
                 <div className="flex flex-wrap items-start justify-between gap-2">
                   <div>
-                    <p className="text-sm font-medium text-ink-900">{g.examTitle ?? "Exam"}</p>
+                    <p className="text-sm font-medium text-ink-900">{g.examTitle ?? "Examen"}</p>
                     <p className="text-xs text-ink-500">
                       {g.className}
-                      {g.gradedAt && <span> · Graded {new Date(g.gradedAt).toLocaleDateString()}</span>}
+                      {g.gradedAt && <span> · Noté le {formatDate(g.gradedAt)}</span>}
                     </p>
                   </div>
                   <span className={clsx("inline-flex rounded-full px-2.5 py-1 text-xs font-semibold", percentTone(g.percent))}>
