@@ -150,9 +150,9 @@ export function TeacherDetailPage() {
         />
       </div>
 
-      {data.pendingVisitRequests > 0 && (
+      {data.pendingSwapRequests > 0 && (
         <p className="mt-3 text-xs font-medium text-accent-600">
-          {data.pendingVisitRequests} pending session visit request{data.pendingVisitRequests === 1 ? "" : "s"}
+          {data.pendingSwapRequests} pending swap request{data.pendingSwapRequests === 1 ? "" : "s"}
         </p>
       )}
 
