@@ -17,8 +17,8 @@ export function ConfirmDialog({
   open,
   title,
   description,
-  confirmLabel = "Confirm",
-  cancelLabel = "Cancel",
+  confirmLabel = "Confirmer",
+  cancelLabel = "Annuler",
   danger = true,
   isPending = false,
   onConfirm,
@@ -37,7 +37,7 @@ export function ConfirmDialog({
           onClick={onConfirm}
           disabled={isPending}
         >
-          {isPending ? "Working…" : confirmLabel}
+          {isPending ? "Chargement…" : confirmLabel}
         </Button>
       </div>
     </Modal>

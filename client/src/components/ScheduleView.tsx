@@ -1,6 +1,6 @@
 import { Card } from "./Card";
 import { EmptyState } from "./Feedback";
-import { DAY_NAMES } from "../lib/period";
+import { DAY_NAMES, formatDate } from "../lib/period";
 import type { ScheduleViewResponse } from "../api/types";
 
 export function ScheduleView({ data }: { data: ScheduleViewResponse }) {
@@ -9,8 +9,8 @@ export function ScheduleView({ data }: { data: ScheduleViewResponse }) {
       return (
         <Card className="p-5">
           <EmptyState
-            title="No vacation sessions scheduled yet"
-            description="The teacher hasn't added one-off sessions for this window."
+            title="Aucune session de vacances programmée pour l'instant"
+            description="L'enseignant n'a pas encore ajouté de séances ponctuelles pour cette période."
           />
         </Card>
       );
@@ -20,7 +20,7 @@ export function ScheduleView({ data }: { data: ScheduleViewResponse }) {
         {data.sessions.map((s, i) => (
           <li key={`${s.date}-${i}`} className="flex items-center gap-3 rounded-sm border border-border bg-surface px-3 py-2.5">
             <span className="text-sm font-medium text-ink-900">
-              {new Date(`${s.date}T00:00:00`).toLocaleDateString(undefined, {
+              {formatDate(`${s.date}T00:00:00`, {
                 weekday: "short",
                 month: "short",
                 day: "numeric",
@@ -44,7 +44,10 @@ export function ScheduleView({ data }: { data: ScheduleViewResponse }) {
   if (!hasAny) {
     return (
       <Card className="p-5">
-        <EmptyState title="No schedule set yet" description="The teacher hasn't added session times." />
+        <EmptyState
+          title="Aucun emploi du temps défini pour l'instant"
+          description="L'enseignant n'a pas encore ajouté d'horaires de séance."
+        />
       </Card>
     );
   }
@@ -65,11 +68,11 @@ export function ScheduleView({ data }: { data: ScheduleViewResponse }) {
               }`}
             >
               {name}
-              {day === today && <span className="ml-1 font-normal normal-case text-accent-600/60">· today</span>}
+              {day === today && <span className="ml-1 font-normal normal-case text-accent-600/60">· aujourd'hui</span>}
             </p>
             <div className="mt-2.5 space-y-1.5">
               {byDay[day]!.length === 0 ? (
-                <p className="py-3 text-center text-[11px] text-ink-400">No session</p>
+                <p className="py-3 text-center text-[11px] text-ink-400">Aucune séance</p>
               ) : (
                 byDay[day]!.map((s, i) => (
                   <div

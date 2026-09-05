@@ -50,7 +50,7 @@ export function AppLayout({
     const title = active
       ? active.label
       : location.pathname.endsWith("/settings")
-        ? "Account settings"
+        ? "Paramètres du compte"
         : brand;
     document.title = `${title} · EduManage`;
   }, [location.pathname, navItems, brand]);
@@ -83,7 +83,7 @@ export function AppLayout({
             type="button"
             onClick={() => setSidebarOpen(false)}
             className="focus-ring flex min-h-11 min-w-11 items-center justify-center rounded-sm text-white/60 hover:bg-white/5 hover:text-white lg:hidden"
-            aria-label="Close menu"
+            aria-label="Fermer le menu"
           >
             <X className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
           </button>
@@ -123,14 +123,14 @@ export function AppLayout({
               to={settingsPath}
               className="focus-ring rounded-sm text-xs font-medium text-white/60 hover:text-white"
             >
-              Account settings
+              Paramètres du compte
             </Link>
             <button
               type="button"
               onClick={() => logoutMutation.mutate()}
               className="focus-ring rounded-sm text-xs font-medium text-white/60 hover:text-danger-600"
             >
-              Log out
+              Se déconnecter
             </button>
           </div>
         </div>
@@ -142,7 +142,7 @@ export function AppLayout({
             type="button"
             onClick={() => setSidebarOpen(true)}
             className="focus-ring flex min-h-11 items-center gap-2 rounded-sm px-1.5 text-ink-700 hover:bg-canvas"
-            aria-label="Open menu, EduManage"
+            aria-label="Ouvrir le menu, EduManage"
           >
             <Menu className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
             <span className="text-sm font-semibold text-ink-900">EduManage</span>

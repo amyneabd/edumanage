@@ -3,6 +3,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router-dom";
 import clsx from "clsx";
 import { formatDistanceToNow } from "date-fns";
+import { fr } from "date-fns/locale";
 import { Bell } from "lucide-react";
 import { fetchNotifications, markAllNotificationsRead, markNotificationRead } from "../api/teacher";
 import {
@@ -107,13 +108,13 @@ export function NotificationBell({ role }: { role: "teacher" | "parent" }) {
                   onClick={() => readAllMutation.mutate()}
                   className="focus-ring rounded-sm text-xs font-medium text-accent-600 hover:text-accent-700"
                 >
-                  Mark all read
+                  Tout marquer comme lu
                 </button>
               )}
             </div>
             <div className="max-h-96 overflow-y-auto">
               {items.length === 0 ? (
-                <p className="px-4 py-8 text-center text-sm text-ink-400">You're all caught up.</p>
+                <p className="px-4 py-8 text-center text-sm text-ink-400">Vous êtes à jour.</p>
               ) : (
                 items.map((n) => {
                   const meta = NOTIFICATION_META[n.type];
@@ -143,7 +144,7 @@ export function NotificationBell({ role }: { role: "teacher" | "parent" }) {
                         </span>
                         <span className="mt-0.5 block truncate text-xs text-ink-500">{n.body}</span>
                         <span className="mt-0.5 block text-[11px] text-ink-400">
-                          {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true })}
+                          {formatDistanceToNow(new Date(n.createdAt), { addSuffix: true, locale: fr })}
                         </span>
                       </span>
                     </button>

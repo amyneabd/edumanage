@@ -38,7 +38,7 @@ export function ErrorState({ message, onRetry }: { message: string; onRetry?: ()
       <p>{message}</p>
       {onRetry && (
         <button type="button" onClick={onRetry} className="focus-ring mt-2 font-medium underline">
-          Retry
+          Réessayer
         </button>
       )}
     </div>

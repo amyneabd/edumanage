@@ -15,7 +15,7 @@ export function Pagination({ page, totalPages, total, pageSize, onPageChange }: 
   return (
     <div className="mt-4 flex items-center justify-between gap-3 border-t border-border pt-4 text-sm">
       <p className="text-ink-500">
-        Showing <span className="font-medium text-ink-700">{start}–{end}</span> of{" "}
+        Affichage de <span className="font-medium text-ink-700">{start}–{end}</span> sur{" "}
         <span className="font-medium text-ink-700">{total}</span>
       </p>
       <div className="flex items-center gap-2">
@@ -25,10 +25,10 @@ export function Pagination({ page, totalPages, total, pageSize, onPageChange }: 
           disabled={page <= 1}
           className="focus-ring min-h-11 rounded-sm border border-border-strong px-3.5 text-xs font-medium text-ink-700 hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Previous
+          Précédent
         </button>
         <span className="text-xs text-ink-500">
-          Page {page} of {totalPages}
+          Page {page} sur {totalPages}
         </span>
         <button
           type="button"
@@ -36,7 +36,7 @@ export function Pagination({ page, totalPages, total, pageSize, onPageChange }: 
           disabled={page >= totalPages}
           className="focus-ring min-h-11 rounded-sm border border-border-strong px-3.5 text-xs font-medium text-ink-700 hover:bg-canvas disabled:cursor-not-allowed disabled:opacity-40"
         >
-          Next
+          Suivant
         </button>
       </div>
     </div>

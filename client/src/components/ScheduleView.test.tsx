@@ -8,12 +8,12 @@ describe("ScheduleView", () => {
       <ScheduleView data={{ mode: "weekly", slots: [{ dayOfWeek: 1, startTime: "16:00", endTime: "17:00" }] }} />
     );
     expect(screen.getByText("16:00")).toBeInTheDocument();
-    expect(screen.getByText("Mon")).toBeInTheDocument();
+    expect(screen.getByText("Lun")).toBeInTheDocument();
   });
 
   it("shows the empty state when weekly mode has no slots", () => {
     render(<ScheduleView data={{ mode: "weekly", slots: [] }} />);
-    expect(screen.getByText("No schedule set yet")).toBeInTheDocument();
+    expect(screen.getByText("Aucun emploi du temps défini pour l'instant")).toBeInTheDocument();
   });
 
   it("renders a dated list when mode is vacation", () => {
@@ -27,6 +27,6 @@ describe("ScheduleView", () => {
 
   it("shows a vacation-specific empty state when vacation mode has no sessions", () => {
     render(<ScheduleView data={{ mode: "vacation", sessions: [] }} />);
-    expect(screen.getByText("No vacation sessions scheduled yet")).toBeInTheDocument();
+    expect(screen.getByText("Aucune session de vacances programmée pour l'instant")).toBeInTheDocument();
   });
 });

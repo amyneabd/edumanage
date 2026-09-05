@@ -85,7 +85,7 @@ export function Modal({ open, onClose, title, children, maxWidthClassName = "max
             type="button"
             onClick={onClose}
             className="focus-ring flex min-h-11 min-w-11 items-center justify-center rounded-sm text-ink-400 hover:bg-canvas hover:text-ink-700"
-            aria-label="Close"
+            aria-label="Fermer"
           >
             <X className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
           </button>

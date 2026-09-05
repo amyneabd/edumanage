@@ -86,33 +86,33 @@ const ParentFeedPage = lazy(() =>
   import("./features/parent/FeedPage").then((m) => ({ default: m.ParentFeedPage })),
 );
 
-const adminNav = [{ to: "/admin", label: "Teachers", icon: UserCog }];
+const adminNav = [{ to: "/admin", label: "Enseignants", icon: UserCog }];
 
 const teacherNav = [
-  { to: "/teacher/overview", label: "Overview", icon: LayoutDashboard },
-  { to: "/teacher/classes", label: "Class Management", icon: Users2 },
-  { to: "/teacher/ledger", label: "Ledger", icon: Wallet },
-  { to: "/teacher/gradebook", label: "Gradebook", icon: GraduationCap },
+  { to: "/teacher/overview", label: "Aperçu", icon: LayoutDashboard },
+  { to: "/teacher/classes", label: "Gestion des classes", icon: Users2 },
+  { to: "/teacher/ledger", label: "Registre", icon: Wallet },
+  { to: "/teacher/gradebook", label: "Carnet de notes", icon: GraduationCap },
   { to: "/teacher/feed", label: "Communication", icon: MessageSquare },
 ];
 
 const pupilNav = [
-  { to: "/pupil/home", label: "Home", icon: LayoutDashboard },
-  { to: "/pupil/schedule", label: "Schedule", icon: CalendarDays },
-  { to: "/pupil/attendance", label: "Attendance", icon: ClipboardCheck },
-  { to: "/pupil/payments", label: "Payments", icon: Wallet },
-  { to: "/pupil/grades", label: "Grades", icon: GraduationCap },
-  { to: "/pupil/feed", label: "Class Feed", icon: MessageSquare },
+  { to: "/pupil/home", label: "Accueil", icon: LayoutDashboard },
+  { to: "/pupil/schedule", label: "Emploi du temps", icon: CalendarDays },
+  { to: "/pupil/attendance", label: "Présences", icon: ClipboardCheck },
+  { to: "/pupil/payments", label: "Paiements", icon: Wallet },
+  { to: "/pupil/grades", label: "Notes", icon: GraduationCap },
+  { to: "/pupil/feed", label: "Publications de la classe", icon: MessageSquare },
 ];
 
 const parentNav = [
-  { to: "/parent/home", label: "Home", icon: LayoutDashboard },
-  { to: "/parent/schedule", label: "Schedule", icon: CalendarDays },
-  { to: "/parent/attendance", label: "Attendance", icon: ClipboardCheck },
-  { to: "/parent/payments", label: "Payments", icon: Wallet },
-  { to: "/parent/ledger", label: "Ledger", icon: Receipt },
-  { to: "/parent/grades", label: "Grades", icon: GraduationCap },
-  { to: "/parent/feed", label: "Class Feed", icon: MessageSquare },
+  { to: "/parent/home", label: "Accueil", icon: LayoutDashboard },
+  { to: "/parent/schedule", label: "Emploi du temps", icon: CalendarDays },
+  { to: "/parent/attendance", label: "Présences", icon: ClipboardCheck },
+  { to: "/parent/payments", label: "Paiements", icon: Wallet },
+  { to: "/parent/ledger", label: "Registre", icon: Receipt },
+  { to: "/parent/grades", label: "Notes", icon: GraduationCap },
+  { to: "/parent/feed", label: "Publications de la classe", icon: MessageSquare },
 ];
 
 function withSuspense(element: ReactElement) {
@@ -133,7 +133,7 @@ export default function App() {
           <Route path="/pending" element={withSuspense(<PendingPage />)} />
 
           <Route element={<RequireRole role="ADMIN" />}>
-            <Route element={<AppLayout navItems={adminNav} brand="Admin" />}>
+            <Route element={<AppLayout navItems={adminNav} brand="Administrateur" />}>
               <Route path="/admin" element={withSuspense(<AdminPage />)} />
               <Route path="/admin/teachers/:id" element={withSuspense(<TeacherDetailPage />)} />
               <Route path="/admin/settings" element={withSuspense(<SettingsPage />)} />
@@ -141,7 +141,7 @@ export default function App() {
           </Route>
 
           <Route element={<RequireRole role="TEACHER" />}>
-            <Route element={<AppLayout navItems={teacherNav} brand="Teacher" notifications="teacher" />}>
+            <Route element={<AppLayout navItems={teacherNav} brand="Enseignant" notifications="teacher" />}>
               <Route path="/teacher/overview" element={withSuspense(<OverviewPage />)} />
               <Route path="/teacher/classes" element={withSuspense(<ClassesPage />)} />
               <Route path="/teacher/classes/:id" element={withSuspense(<ClassDetailPage />)} />
@@ -153,7 +153,7 @@ export default function App() {
           </Route>
 
           <Route element={<RequireRole role="PUPIL" />}>
-            <Route element={<AppLayout navItems={pupilNav} brand="Pupil" />}>
+            <Route element={<AppLayout navItems={pupilNav} brand="Élève" />}>
               <Route path="/pupil/home" element={withSuspense(<PupilHomePage />)} />
               <Route path="/pupil/schedule" element={withSuspense(<PupilSchedulePage />)} />
               <Route path="/pupil/attendance" element={withSuspense(<PupilAttendancePage />)} />
