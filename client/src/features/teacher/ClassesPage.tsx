@@ -16,27 +16,27 @@ import clsx from "clsx";
 import { Plus, X } from "lucide-react";
 import {
   approveParentRequest,
-  approveVisitRequest,
+  approveSwapRequest,
   assignPupilRequest,
   createClass,
   declineParentRequest,
-  declineVisitRequest,
+  declineSwapRequest,
   endVacation,
   fetchAllParentRequests,
   fetchClasses,
   fetchCurrentVacation,
   fetchPupilRequests,
-  fetchVisitRequests,
+  fetchSwapRequests,
   rejectPupilRequest,
   startVacation as startVacationApi,
 } from "../../api/teacher";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
-import { ClassTypeBadge } from "../../components/Badge";
+import { ClassTypeBadge, SwapStatusBadge } from "../../components/Badge";
 import { EmptyState, Spinner } from "../../components/Feedback";
 import { Input } from "../../components/Input";
 import { Modal } from "../../components/Modal";
-import type { ClassType, PupilRequest, TeacherParentRequest, TeacherVisitRequest } from "../../api/types";
+import type { ClassType, PupilRequest, TeacherParentRequest, TeacherSwapRequest } from "../../api/types";
 
 const CLASS_TYPES: ClassType[] = ["SCIENCE", "MATH", "INFO", "ECO"];
 
@@ -144,13 +144,13 @@ function ClassCard({
   );
 }
 
-function VisitRequestRow({
+function SwapRequestRow({
   request,
   onApprove,
   onDecline,
   isPending,
 }: {
-  request: TeacherVisitRequest;
+  request: TeacherSwapRequest;
   onApprove: () => void;
   onDecline: () => void;
   isPending: boolean;
@@ -159,11 +159,17 @@ function VisitRequestRow({
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-border bg-surface px-4 py-3">
       <div>
         <p className="text-sm font-medium text-ink-900">
-          {request.pupilName} <span className="font-normal text-ink-400">wants to visit</span> {request.className}
+          {request.pupilName} <span className="font-normal text-ink-400">misses</span> {request.originClassName}{" "}
+          <span className="font-normal text-ink-400">on</span>{" "}
+          {new Date(request.originDate).toLocaleDateString(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          })}
         </p>
         <p className="mt-0.5 text-xs text-ink-500">
-          {request.pupilEmail} ·{" "}
-          {new Date(request.sessionDate).toLocaleDateString(undefined, {
+          to join {request.targetClassName} on{" "}
+          {new Date(request.targetDate).toLocaleDateString(undefined, {
             weekday: "short",
             month: "short",
             day: "numeric",
@@ -172,6 +178,7 @@ function VisitRequestRow({
         {request.reason && <p className="mt-1 text-xs italic text-ink-400">"{request.reason}"</p>}
       </div>
       <div className="flex items-center gap-2">
+        <SwapStatusBadge status={request.status} />
         <Button size="sm" variant="secondary" onClick={onDecline} disabled={isPending}>
           Decline
         </Button>
@@ -345,9 +352,9 @@ export function ClassesPage() {
 
   const classesQuery = useQuery({ queryKey: ["teacher", "classes"], queryFn: fetchClasses });
   const requestsQuery = useQuery({ queryKey: ["teacher", "pupil-requests"], queryFn: fetchPupilRequests });
-  const visitRequestsQuery = useQuery({
-    queryKey: ["teacher", "visit-requests", "PENDING"],
-    queryFn: () => fetchVisitRequests("PENDING"),
+  const swapRequestsQuery = useQuery({
+    queryKey: ["teacher", "swap-requests", "PENDING"],
+    queryFn: () => fetchSwapRequests("PENDING"),
   });
   const parentRequestsQuery = useQuery({
     queryKey: ["teacher", "parent-requests"],
@@ -360,22 +367,22 @@ export function ClassesPage() {
     queryClient.invalidateQueries({ queryKey: ["teacher", "overview"] });
   };
 
-  const invalidateVisitRequests = () => {
-    queryClient.invalidateQueries({ queryKey: ["teacher", "visit-requests"] });
+  const invalidateSwapRequests = () => {
+    queryClient.invalidateQueries({ queryKey: ["teacher", "swap-requests"] });
     queryClient.invalidateQueries({ queryKey: ["teacher", "classes"] });
   };
 
-  const approveVisitMutation = useMutation({
-    mutationFn: (id: string) => approveVisitRequest(id),
+  const approveSwapMutation = useMutation({
+    mutationFn: (id: string) => approveSwapRequest(id),
     onSuccess: () => {
-      toast.success("Visit request approved.");
-      invalidateVisitRequests();
+      toast.success("Swap request approved.");
+      invalidateSwapRequests();
     },
   });
 
-  const declineVisitMutation = useMutation({
-    mutationFn: (id: string) => declineVisitRequest(id),
-    onSuccess: invalidateVisitRequests,
+  const declineSwapMutation = useMutation({
+    mutationFn: (id: string) => declineSwapRequest(id),
+    onSuccess: invalidateSwapRequests,
   });
 
   const invalidateParentRequests = () => {
@@ -431,7 +438,7 @@ export function ClassesPage() {
 
   const classes = classesQuery.data ?? [];
   const requests = requestsQuery.data ?? [];
-  const visitRequests = visitRequestsQuery.data ?? [];
+  const swapRequests = swapRequestsQuery.data ?? [];
   const parentRequests = parentRequestsQuery.data ?? [];
 
   return (
@@ -483,25 +490,25 @@ export function ClassesPage() {
         </section>
 
         <section className="mt-8">
-          <h2 className="text-sm font-medium text-ink-700">Session visit requests</h2>
-          {visitRequestsQuery.isLoading ? (
+          <h2 className="text-sm font-medium text-ink-700">Session swap requests</h2>
+          {swapRequestsQuery.isLoading ? (
             <Spinner />
-          ) : visitRequests.length === 0 ? (
+          ) : swapRequests.length === 0 ? (
             <div className="mt-2">
               <EmptyState
-                title="No pending visit requests"
-                description="Pupils requesting to sit in on another class's session will appear here."
+                title="No pending swap requests"
+                description="Pupils requesting to swap into another class's session will appear here."
               />
             </div>
           ) : (
             <div className="mt-2 space-y-2">
-              {visitRequests.map((r) => (
-                <VisitRequestRow
+              {swapRequests.map((r) => (
+                <SwapRequestRow
                   key={r.id}
                   request={r}
-                  isPending={approveVisitMutation.isPending || declineVisitMutation.isPending}
-                  onApprove={() => approveVisitMutation.mutate(r.id)}
-                  onDecline={() => declineVisitMutation.mutate(r.id)}
+                  isPending={approveSwapMutation.isPending || declineSwapMutation.isPending}
+                  onApprove={() => approveSwapMutation.mutate(r.id)}
+                  onDecline={() => declineSwapMutation.mutate(r.id)}
                 />
               ))}
             </div>
