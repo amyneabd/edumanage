@@ -193,6 +193,23 @@ describe("createSwapRequest", () => {
     expect(request.targetClassId).toBe(targetClassId);
     expect(request.reason).toBe("Doctor appointment");
   });
+
+  it("throws when the pupil already has a PENDING request for the same originDate", async () => {
+    const originDate = nextWeekday(1);
+    await createSwapRequest(pupilId, {
+      originDate: dateKey(originDate),
+      targetClassId,
+      targetDate: dateKey(nextWeekday(3)),
+    });
+
+    await expect(
+      createSwapRequest(pupilId, {
+        originDate: dateKey(originDate),
+        targetClassId,
+        targetDate: dateKey(nextWeekday(3)),
+      })
+    ).rejects.toThrow(SwapError);
+  });
 });
 
 describe("listOwnSwapRequests / cancelSwapRequest", () => {
@@ -219,6 +236,18 @@ describe("listOwnSwapRequests / cancelSwapRequest", () => {
       targetDate: dateKey(nextWeekday(3)),
     });
     await expect(cancelSwapRequest("someone-else", request.id)).rejects.toThrow(SwapError);
+  });
+
+  it("throws when cancelling a request that has already been approved", async () => {
+    const request = await createSwapRequest(pupilId, {
+      originDate: dateKey(nextWeekday(1)),
+      targetClassId,
+      targetDate: dateKey(nextWeekday(3)),
+    });
+
+    await respondToSwapRequest(teacherId, request.id, "APPROVED");
+
+    await expect(cancelSwapRequest(pupilId, request.id)).rejects.toThrow(SwapError);
   });
 });
 
@@ -270,5 +299,17 @@ describe("listSwapRequestsForTeacher / respondToSwapRequest", () => {
       targetDate: dateKey(nextWeekday(3)),
     });
     await expect(respondToSwapRequest(otherTeacherId, request.id, "APPROVED")).rejects.toThrow(SwapError);
+  });
+
+  it("throws when responding to a request that has already been resolved", async () => {
+    const request = await createSwapRequest(pupilId, {
+      originDate: dateKey(nextWeekday(1)),
+      targetClassId,
+      targetDate: dateKey(nextWeekday(3)),
+    });
+
+    await respondToSwapRequest(teacherId, request.id, "APPROVED");
+
+    await expect(respondToSwapRequest(teacherId, request.id, "DECLINED")).rejects.toThrow(SwapError);
   });
 });

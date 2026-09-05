@@ -185,12 +185,13 @@ export async function getAttendanceOverviewForTeacher(teacherId: string) {
   });
 
   const present = records.filter((r) => r.status === "PRESENT").length;
-  const total = records.length;
+  const absent = records.filter((r) => r.status === "ABSENT").length;
+  const total = present + absent;
 
   return {
     period,
     present,
-    absent: total - present,
+    absent,
     total,
     rate: total > 0 ? (present / total) * 100 : null,
   };

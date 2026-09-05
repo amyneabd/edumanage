@@ -1,5 +1,5 @@
 import { prisma } from "../utils/prisma.js";
-import { notifyParentsOfPupil, createNotification } from "./notification.service.js";
+import { createNotification } from "./notification.service.js";
 import { getVacationSessionForDate } from "./vacation.service.js";
 import type { SwapRequestStatus } from "@prisma/client";
 
@@ -62,6 +62,13 @@ export async function createSwapRequest(
   if (originDate < today) throw new SwapError("Origin date must not be in the past.", 400);
   if (targetDate < today) throw new SwapError("Target date must not be in the past.", 400);
 
+  const existingPending = await prisma.swapRequest.findFirst({
+    where: { pupilId, originDate, status: "PENDING" },
+  });
+  if (existingPending) {
+    throw new SwapError("You already have a pending swap request for that session.", 409);
+  }
+
   const originIsReal = await isRealSession(pupil.classId!, originDate);
   if (!originIsReal) throw new SwapError("Origin date is not a scheduled session of your class.", 400);
 
@@ -110,6 +117,9 @@ export async function listOwnSwapRequests(pupilId: string) {
 export async function cancelSwapRequest(pupilId: string, id: string) {
   const request = await prisma.swapRequest.findFirst({ where: { id, pupilId } });
   if (!request) throw new SwapError("Swap request not found.", 404);
+  if (request.status !== "PENDING") {
+    throw new SwapError("Only pending requests can be cancelled.", 400);
+  }
   await prisma.swapRequest.delete({ where: { id } });
 }
 
@@ -130,6 +140,9 @@ export async function respondToSwapRequest(teacherId: string, id: string, status
     include: { originClass: true, targetClass: true },
   });
   if (!request) throw new SwapError("Swap request not found.", 404);
+  if (request.status !== "PENDING") {
+    throw new SwapError("This request has already been resolved.", 400);
+  }
 
   const updated = await prisma.swapRequest.update({ where: { id }, data: { status } });
 
@@ -140,17 +153,6 @@ export async function respondToSwapRequest(teacherId: string, id: string, status
       update: { status: "EXCUSED" },
     });
   }
-
-  await notifyParentsOfPupil(request.pupilId, {
-    type: "SWAP_REQUEST",
-    title: status === "APPROVED" ? "Swap request approved" : "Swap request declined",
-    body:
-      status === "APPROVED"
-        ? `Your swap into ${request.targetClass.name} was approved.`
-        : `Your swap into ${request.targetClass.name} was declined.`,
-    link: "/parent/attendance",
-    dedupeKey: `swap:${request.id}:${status}`,
-  });
 
   return updated;
 }

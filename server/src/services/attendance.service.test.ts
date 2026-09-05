@@ -1,7 +1,13 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../utils/prisma.js";
 import { hashPassword } from "../utils/password.js";
-import { getAttendanceCalendar, getOwnAttendanceCalendar, getPupilDetail, markAttendance } from "./attendance.service.js";
+import {
+  getAttendanceCalendar,
+  getAttendanceOverviewForTeacher,
+  getOwnAttendanceCalendar,
+  getPupilDetail,
+  markAttendance,
+} from "./attendance.service.js";
 import { addVacationSession, startVacation } from "./vacation.service.js";
 
 const TEST_EMAIL = `test-attendance-vacation-${Date.now()}@example.com`;
@@ -190,6 +196,27 @@ describe("markAttendance schedule restriction is period-relative", () => {
   it("still rejects an unscheduled day with no vacation session in the current period", async () => {
     const targetDate = unscheduledDateInMonth(0, 1);
     await expect(markAttendance(teacherId, pupilId, dateKey(targetDate), "PRESENT")).rejects.toThrow();
+  });
+});
+
+describe("getAttendanceOverviewForTeacher", () => {
+  it("excludes EXCUSED records from both present and absent, and from the total", async () => {
+    const now = new Date();
+    const onDay = (day: number) => new Date(now.getFullYear(), now.getMonth(), day);
+
+    await prisma.attendanceRecord.createMany({
+      data: [
+        { pupilId, classId, date: onDay(1), status: "PRESENT" },
+        { pupilId, classId, date: onDay(2), status: "PRESENT" },
+        { pupilId, classId, date: onDay(3), status: "ABSENT" },
+        { pupilId, classId, date: onDay(4), status: "EXCUSED" },
+      ],
+    });
+
+    const overview = await getAttendanceOverviewForTeacher(teacherId);
+    expect(overview.present).toBe(2);
+    expect(overview.absent).toBe(1);
+    expect(overview.total).toBe(3);
   });
 });
 
