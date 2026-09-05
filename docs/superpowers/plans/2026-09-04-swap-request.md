@@ -1783,13 +1783,63 @@ git commit -m "feat: rebuild pupil schedule page for dual-date swap requests"
 
 - [ ] **Step 1: Update the implementation**
 
-In `client/src/features/teacher/ClassesPage.tsx`, update the import block (currently lines 17-32) to import `fetchSwapRequests`/`approveSwapRequest`/`declineSwapRequest` and `TeacherSwapRequest`/`SwapStatusBadge` in place of the visit-request equivalents.
+**CORRECTION (post-Task-15-preflight-check):** Verified the real current file against this task's line ranges and found two plan gaps. First, line 434 (`const visitRequests = visitRequestsQuery.data ?? [];`) — the derived list variable consumed by the JSX at lines 489/498 — falls outside every cited range (147-184, 348-379, 485-509) and the plan never mentions renaming it; missing this rename leaves a stale `visitRequests`/`visitRequestsQuery` reference after `visitRequestsQuery` itself is renamed, which would fail to compile. Second, and more significant: the spec (`docs/superpowers/specs/2026-09-04-swap-request-design.md:153`) says `TeacherSwapRequest` "keeps `pupilId`/`pupilName`/`pupilEmail`", and the real current row (line 165) does render `{request.pupilEmail}` — but the real, already-committed `TeacherSwapRequest` interface (`client/src/api/types.ts:428-441`, from Task 9) and the real, already-committed backend `swapRequestsHandler` (`server/src/controllers/teacher.controller.ts:393-415`, from Task 8) both omit `pupilEmail` entirely (only `pupilId`/`pupilName` are present end-to-end). Since Tasks 8 and 9 already landed, passed their own task reviews, and later tasks depend on their exact shapes, revisiting them now is out of scope for this task — the correction below simply drops the `pupilEmail` display, since the field doesn't exist on the type this row actually receives.
 
-Rename `VisitRequestRow` (currently lines 147-184) to `SwapRequestRow`, typed to `TeacherSwapRequest`, and extend its rendered content to show both the origin session line (e.g. `"{pupilName} misses {originClassName} on {originDate}"`) and target session line (e.g. `"to join {targetClassName} on {targetDate}"`), keeping the existing approve/decline buttons and `SwapStatusBadge`.
+In `client/src/features/teacher/ClassesPage.tsx`, update the import block (currently lines 17-32) to import `fetchSwapRequests`/`approveSwapRequest`/`declineSwapRequest` and `TeacherSwapRequest`/`SwapStatusBadge` in place of the visit-request equivalents (drop `fetchVisitRequests`/`approveVisitRequest`/`declineVisitRequest`/`TeacherVisitRequest` — `TeacherVisitRequest` no longer exists on `../../api/types` as of Task 9).
 
-Inside `ClassesPage()`: rename `visitRequestsQuery` (currently lines 348-351) to `swapRequestsQuery` calling `fetchSwapRequests`; rename `invalidateVisitRequests` (currently lines 363-366) to `invalidateSwapRequests`; rename `approveVisitMutation`/`declineVisitMutation` (currently lines 368-379) to `approveSwapMutation`/`declineSwapMutation` calling `approveSwapRequest`/`declineSwapRequest`.
+Rename `VisitRequestRow` (currently lines 147-184) to `SwapRequestRow`, typed to `TeacherSwapRequest`, dropping the `pupilEmail` line (the field doesn't exist on `TeacherSwapRequest`) and showing origin/target session lines plus the status badge instead:
 
-Update the JSX section "Session visit requests" (currently lines 485-509): heading text → "Session swap requests", map over `swapRequestsQuery.data` rendering `<SwapRequestRow ... />`.
+```typescript
+function SwapRequestRow({
+  request,
+  onApprove,
+  onDecline,
+  isPending,
+}: {
+  request: TeacherSwapRequest;
+  onApprove: () => void;
+  onDecline: () => void;
+  isPending: boolean;
+}) {
+  return (
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-sm border border-border bg-surface px-4 py-3">
+      <div>
+        <p className="text-sm font-medium text-ink-900">
+          {request.pupilName} <span className="font-normal text-ink-400">misses</span> {request.originClassName}{" "}
+          <span className="font-normal text-ink-400">on</span>{" "}
+          {new Date(request.originDate).toLocaleDateString(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          })}
+        </p>
+        <p className="mt-0.5 text-xs text-ink-500">
+          to join {request.targetClassName} on{" "}
+          {new Date(request.targetDate).toLocaleDateString(undefined, {
+            weekday: "short",
+            month: "short",
+            day: "numeric",
+          })}
+        </p>
+        {request.reason && <p className="mt-1 text-xs italic text-ink-400">"{request.reason}"</p>}
+      </div>
+      <div className="flex items-center gap-2">
+        <SwapStatusBadge status={request.status} />
+        <Button size="sm" variant="secondary" onClick={onDecline} disabled={isPending}>
+          Decline
+        </Button>
+        <Button size="sm" onClick={onApprove} disabled={isPending}>
+          Approve
+        </Button>
+      </div>
+    </div>
+  );
+}
+```
+
+Inside `ClassesPage()`: rename `visitRequestsQuery` (currently lines 348-351) to `swapRequestsQuery` calling `fetchSwapRequests("PENDING")` (query key `["teacher", "swap-requests", "PENDING"]`); rename `invalidateVisitRequests` (currently lines 363-366) to `invalidateSwapRequests` (invalidating `["teacher", "swap-requests"]` and `["teacher", "classes"]`); rename `approveVisitMutation`/`declineVisitMutation` (currently lines 368-379) to `approveSwapMutation`/`declineSwapMutation` calling `approveSwapRequest`/`declineSwapRequest`, calling `invalidateSwapRequests` on success exactly as the originals called `invalidateVisitRequests`. Also rename the derived list variable at line 434 (`const visitRequests = visitRequestsQuery.data ?? [];`, outside every range above but required since it consumes the renamed query) to `const swapRequests = swapRequestsQuery.data ?? [];`.
+
+Update the JSX section "Session visit requests" (currently lines 485-509): heading text → "Session swap requests", the empty-state copy → e.g. `title="No pending swap requests"` / `description="Pupils requesting to swap into another class's session will appear here."`, and replace every remaining `visitRequests`/`approveVisitMutation`/`declineVisitMutation`/`VisitRequestRow` reference in this block with `swapRequests`/`approveSwapMutation`/`declineSwapMutation`/`SwapRequestRow`.
 
 - [ ] **Step 2: Run the full client suite to confirm no regression**
 
