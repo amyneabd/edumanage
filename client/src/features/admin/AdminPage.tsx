@@ -13,6 +13,8 @@ import { EmptyState, Spinner } from "../../components/Feedback";
 import { Pagination } from "../../components/Pagination";
 import { usePagination } from "../../hooks/usePagination";
 import { formatCurrency } from "../../lib/currency";
+import { formatDate } from "../../lib/period";
+import { USER_STATUS_LABELS } from "../../lib/labels";
 import type { AdminTeacherSummary, UserStatus } from "../../api/types";
 
 const PAGE_SIZE = 20;
@@ -90,14 +92,14 @@ export function AdminPage() {
   const approveMutation = useMutation({
     mutationFn: approveTeacher,
     onSuccess: () => {
-      toast.success("Teacher approved.");
+      toast.success("Enseignant approuvé.");
       invalidate();
     },
   });
   const rejectMutation = useMutation({
     mutationFn: rejectTeacher,
     onSuccess: () => {
-      toast.success("Teacher application rejected.");
+      toast.success("Candidature d'enseignant rejetée.");
       invalidate();
       setRejectTarget(null);
     },
@@ -142,34 +144,34 @@ export function AdminPage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-ink-900">Admin</h1>
-      <p className="mt-1 text-sm text-ink-500">Every teacher account on the platform, at a glance.</p>
+      <h1 className="text-2xl font-semibold text-ink-900">Administration</h1>
+      <p className="mt-1 text-sm text-ink-500">Tous les comptes enseignants de la plateforme, en un coup d'œil.</p>
 
       <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          label="Teachers"
+          label="Enseignants"
           value={kpis.total}
-          hint={`${kpis.active} active`}
+          hint={`${kpis.active} actifs`}
           icon={<Users2 className="h-[18px] w-[18px]" strokeWidth={1.8} />}
           accent="bg-accent-50 text-accent-600"
         />
         <StatCard
-          label="Pending approvals"
+          label="Approbations en attente"
           value={kpis.pending}
-          hint={kpis.pending > 0 ? "Waiting on you" : "All caught up"}
+          hint={kpis.pending > 0 ? "En attente de votre action" : "Tout est à jour"}
           icon={<Clock className="h-[18px] w-[18px]" strokeWidth={1.8} />}
           accent="bg-accent-50 text-accent-600"
         />
         <StatCard
-          label="Total pupils"
+          label="Total des élèves"
           value={kpis.pupils}
           icon={<GraduationCap className="h-[18px] w-[18px]" strokeWidth={1.8} />}
           accent="bg-accent-50 text-accent-600"
         />
         <StatCard
-          label="Collected this month"
+          label="Encaissé ce mois-ci"
           value={formatCurrency(kpis.collected)}
-          hint={`${formatCurrency(kpis.outstanding)} outstanding`}
+          hint={`${formatCurrency(kpis.outstanding)} restant dû`}
           icon={<Wallet className="h-[18px] w-[18px]" strokeWidth={1.8} />}
           accent="bg-success-50 text-success-600"
         />
@@ -177,24 +179,24 @@ export function AdminPage() {
 
       <Card className="mt-6 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <h2 className="text-sm font-medium text-ink-700">Teacher directory</h2>
+          <h2 className="text-sm font-medium text-ink-700">Répertoire des enseignants</h2>
           <div className="flex flex-wrap gap-3">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search name or email…"
-              aria-label="Search teachers"
+              placeholder="Rechercher un nom ou un e-mail…"
+              aria-label="Rechercher des enseignants"
               className="focus-ring w-56 rounded-sm border border-border-strong bg-surface px-3 py-2 text-sm text-ink-900"
             />
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as UserStatus | "ALL")}
-              aria-label="Filter by status"
+              aria-label="Filtrer par statut"
               className="focus-ring rounded-sm border border-border-strong bg-surface px-3 py-2 text-sm text-ink-900"
             >
               {STATUS_FILTERS.map((s) => (
                 <option key={s} value={s}>
-                  {s === "ALL" ? "All statuses" : s}
+                  {s === "ALL" ? "Tous les statuts" : USER_STATUS_LABELS[s]}
                 </option>
               ))}
             </select>
@@ -203,17 +205,17 @@ export function AdminPage() {
 
         <div className="mt-4 overflow-x-auto">
           {rows.length === 0 ? (
-            <EmptyState title="No teachers match these filters" />
+            <EmptyState title="Aucun enseignant ne correspond à ces filtres" />
           ) : (
             <table className="w-full min-w-[880px] text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-ink-400">
-                  <SortHeader label="Teacher" sortKeyValue="name" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
-                  <SortHeader label="Status" sortKeyValue="status" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+                  <SortHeader label="Enseignant" sortKeyValue="name" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+                  <SortHeader label="Statut" sortKeyValue="status" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
                   <SortHeader label="Classes" sortKeyValue="classCount" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
-                  <SortHeader label="Pupils" sortKeyValue="pupilCount" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
-                  <SortHeader label="Collected / Expected" sortKeyValue="collected" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
-                  <SortHeader label="Joined" sortKeyValue="createdAt" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+                  <SortHeader label="Élèves" sortKeyValue="pupilCount" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+                  <SortHeader label="Encaissé / Attendu" sortKeyValue="collected" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
+                  <SortHeader label="Inscrit le" sortKeyValue="createdAt" activeSortKey={sortKey} sortDir={sortDir} onToggle={toggleSort} />
                   <th scope="col" className="pb-2"></th>
                 </tr>
               </thead>
@@ -232,7 +234,7 @@ export function AdminPage() {
                       <StatusBadge status={t.status} />
                       {t.pendingPupilRequests > 0 && (
                         <p className="mt-1 text-[11px] font-medium text-accent-600">
-                          {t.pendingPupilRequests} pupil request{t.pendingPupilRequests === 1 ? "" : "s"}
+                          {t.pendingPupilRequests} demande{t.pendingPupilRequests === 1 ? "" : "s"} d'élève{t.pendingPupilRequests === 1 ? "" : "s"}
                         </p>
                       )}
                     </td>
@@ -241,22 +243,22 @@ export function AdminPage() {
                     <td className="py-3 pr-4 text-ink-500">
                       {formatCurrency(t.collected)} / {formatCurrency(t.expected)}
                       {t.overdueCount > 0 && (
-                        <p className="text-[11px] font-medium text-danger-600">{t.overdueCount} overdue</p>
+                        <p className="text-[11px] font-medium text-danger-600">{t.overdueCount} en retard</p>
                       )}
                     </td>
-                    <td className="py-3 pr-4 text-ink-500">{new Date(t.createdAt).toLocaleDateString()}</td>
+                    <td className="py-3 pr-4 text-ink-500">{formatDate(t.createdAt)}</td>
                     <td className="py-3 text-right" onClick={(e) => e.stopPropagation()}>
                       {t.status === "PENDING" ? (
                         <div className="flex justify-end gap-2">
                           <Button variant="secondary" size="sm" onClick={() => setRejectTarget(t)}>
-                            Reject
+                            Rejeter
                           </Button>
                           <Button size="sm" onClick={() => approveMutation.mutate(t.id)}>
-                            Approve
+                            Approuver
                           </Button>
                         </div>
                       ) : (
-                        <span className="text-xs font-medium text-accent-600">View →</span>
+                        <span className="text-xs font-medium text-accent-600">Voir →</span>
                       )}
                     </td>
                   </tr>
@@ -270,13 +272,13 @@ export function AdminPage() {
 
       <ConfirmDialog
         open={!!rejectTarget}
-        title="Reject this teacher?"
+        title="Rejeter cet enseignant ?"
         description={
           rejectTarget
-            ? `${rejectTarget.name} (${rejectTarget.email}) will be denied access to the platform.`
+            ? `${rejectTarget.name} (${rejectTarget.email}) se verra refuser l'accès à la plateforme.`
             : undefined
         }
-        confirmLabel="Reject"
+        confirmLabel="Rejeter"
         isPending={rejectMutation.isPending}
         onClose={() => setRejectTarget(null)}
         onConfirm={() => rejectTarget && rejectMutation.mutate(rejectTarget.id)}

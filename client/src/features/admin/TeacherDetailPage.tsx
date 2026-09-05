@@ -11,13 +11,13 @@ import { ClassTypeBadge, PaymentBadge, StatusBadge } from "../../components/Badg
 import { ConfirmDialog } from "../../components/ConfirmDialog";
 import { EmptyState, ErrorState, Spinner } from "../../components/Feedback";
 import { formatCurrency } from "../../lib/currency";
-import { DAY_NAMES } from "../../lib/period";
+import { DAY_NAMES, formatDate } from "../../lib/period";
 import type { PostType } from "../../api/types";
 
-const POST_TYPE_LABELS: Record<PostType, string> = { TEXT: "Note", FILE: "File", EXAM: "Exam" };
+const POST_TYPE_LABELS: Record<PostType, string> = { TEXT: "Note", FILE: "Fichier", EXAM: "Examen" };
 
 function formatSchedule(slots: { dayOfWeek: number; startTime: string; endTime: string }[]): string {
-  if (slots.length === 0) return "No schedule set";
+  if (slots.length === 0) return "Aucun horaire défini";
   return slots
     .slice()
     .sort((a, b) => a.dayOfWeek - b.dayOfWeek)
@@ -45,14 +45,14 @@ export function TeacherDetailPage() {
   const approveMutation = useMutation({
     mutationFn: () => approveTeacher(id as string),
     onSuccess: () => {
-      toast.success("Teacher approved.");
+      toast.success("Enseignant approuvé.");
       invalidate();
     },
   });
   const rejectMutation = useMutation({
     mutationFn: () => rejectTeacher(id as string),
     onSuccess: () => {
-      toast.success("Teacher application rejected.");
+      toast.success("Candidature d'enseignant rejetée.");
       invalidate();
       navigate("/admin");
     },
@@ -68,7 +68,7 @@ export function TeacherDetailPage() {
         className="focus-ring inline-flex items-center gap-1 rounded-sm text-sm font-medium text-accent-600 hover:text-accent-700"
       >
         <ArrowLeft className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
-        Back to directory
+        Retour au répertoire
       </Link>
 
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
@@ -78,7 +78,7 @@ export function TeacherDetailPage() {
             <StatusBadge status={data.status} />
           </div>
           <p className="mt-1 text-sm text-ink-500">{data.email}</p>
-          <p className="mt-1 text-xs text-ink-400">Joined {new Date(data.createdAt).toLocaleDateString()}</p>
+          <p className="mt-1 text-xs text-ink-400">Inscrit le {formatDate(data.createdAt)}</p>
           <div className="mt-3 flex items-center gap-2">
             <span className="rounded-sm bg-canvas px-3 py-1.5 font-mono text-sm tracking-widest text-ink-900">
               {data.teacherCode}
@@ -91,7 +91,7 @@ export function TeacherDetailPage() {
               }}
               className="focus-ring rounded-sm text-xs font-medium text-accent-600 hover:text-accent-700"
             >
-              {copied ? "Copied!" : "Copy code"}
+              {copied ? "Copié !" : "Copier le code"}
             </button>
           </div>
         </div>
@@ -99,18 +99,18 @@ export function TeacherDetailPage() {
         {data.status === "PENDING" && (
           <div className="flex gap-2">
             <Button variant="secondary" onClick={() => setRejectOpen(true)}>
-              Reject
+              Rejeter
             </Button>
-            <Button onClick={() => approveMutation.mutate()}>Approve</Button>
+            <Button onClick={() => approveMutation.mutate()}>Approuver</Button>
           </div>
         )}
       </div>
 
       <ConfirmDialog
         open={rejectOpen}
-        title="Reject this teacher?"
-        description={`${data.name} (${data.email}) will be denied access to the platform.`}
-        confirmLabel="Reject"
+        title="Rejeter cet enseignant ?"
+        description={`${data.name} (${data.email}) se verra refuser l'accès à la plateforme.`}
+        confirmLabel="Rejeter"
         isPending={rejectMutation.isPending}
         onClose={() => setRejectOpen(false)}
         onConfirm={() => rejectMutation.mutate()}
@@ -124,27 +124,27 @@ export function TeacherDetailPage() {
           accent="bg-accent-50 text-accent-600"
         />
         <StatCard
-          label="Pupils"
+          label="Élèves"
           value={data.ledgerSummary.pupilCount}
           hint={
             data.pendingPupilRequests > 0
-              ? `${data.pendingPupilRequests} pending request${data.pendingPupilRequests === 1 ? "" : "s"}`
+              ? `${data.pendingPupilRequests} demande${data.pendingPupilRequests === 1 ? "" : "s"} en attente`
               : undefined
           }
           icon={<GraduationCap className="h-[18px] w-[18px]" strokeWidth={1.8} />}
           accent="bg-accent-50 text-accent-600"
         />
         <StatCard
-          label="Collected this month"
+          label="Encaissé ce mois-ci"
           value={formatCurrency(data.ledgerSummary.collected)}
-          hint={`${formatCurrency(data.ledgerSummary.outstanding)} outstanding`}
+          hint={`${formatCurrency(data.ledgerSummary.outstanding)} restant dû`}
           icon={<Wallet className="h-[18px] w-[18px]" strokeWidth={1.8} />}
           accent="bg-success-50 text-success-600"
         />
         <StatCard
-          label="Attendance rate"
+          label="Taux de présence"
           value={data.attendance.rate !== null ? `${Math.round(data.attendance.rate)}%` : "—"}
-          hint={`${data.attendance.present}/${data.attendance.total} this month`}
+          hint={`${data.attendance.present}/${data.attendance.total} ce mois-ci`}
           icon={<CalendarDays className="h-[18px] w-[18px]" strokeWidth={1.8} />}
           accent="bg-accent-50 text-accent-600"
         />
@@ -152,7 +152,7 @@ export function TeacherDetailPage() {
 
       {data.pendingSwapRequests > 0 && (
         <p className="mt-3 text-xs font-medium text-accent-600">
-          {data.pendingSwapRequests} pending swap request{data.pendingSwapRequests === 1 ? "" : "s"}
+          {data.pendingSwapRequests} demande{data.pendingSwapRequests === 1 ? "" : "s"} d'échange en attente
         </p>
       )}
 
@@ -160,7 +160,7 @@ export function TeacherDetailPage() {
         <h2 className="text-sm font-medium text-ink-700">Classes</h2>
         {data.classes.length === 0 ? (
           <div className="mt-3">
-            <EmptyState title="No classes yet" />
+            <EmptyState title="Aucune classe pour le moment" />
           </div>
         ) : (
           <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">
@@ -170,10 +170,10 @@ export function TeacherDetailPage() {
                   <p className="font-medium text-ink-900">{c.name}</p>
                   <ClassTypeBadge type={c.type} />
                 </div>
-                <p className="mt-2 text-sm text-ink-500">{c._count?.pupils ?? c.pupils.length} pupils</p>
+                <p className="mt-2 text-sm text-ink-500">{c._count?.pupils ?? c.pupils.length} élèves</p>
                 <p className="mt-1 text-xs text-ink-400">{formatSchedule(c.scheduleSlots)}</p>
                 <p className="mt-1 text-xs text-ink-400">
-                  {c.monthlyFee !== null ? `${formatCurrency(c.monthlyFee)}/month` : "No fee set"}
+                  {c.monthlyFee !== null ? `${formatCurrency(c.monthlyFee)}/mois` : "Aucun tarif défini"}
                 </p>
               </Card>
             ))}
@@ -182,20 +182,20 @@ export function TeacherDetailPage() {
       </div>
 
       <div className="mt-6">
-        <h2 className="text-sm font-medium text-ink-700">Ledger — {data.ledgerSummary.period}</h2>
+        <h2 className="text-sm font-medium text-ink-700">Registre — {data.ledgerSummary.period}</h2>
         <Card className="mt-3 overflow-x-auto p-5">
           {data.ledger.length === 0 ? (
-            <EmptyState title="No pupils billed this period" />
+            <EmptyState title="Aucun élève facturé pour cette période" />
           ) : (
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="text-left text-xs uppercase tracking-wide text-ink-400">
-                  <th scope="col" className="pb-2 pr-4 font-medium">Pupil</th>
-                  <th scope="col" className="pb-2 pr-4 font-medium">Class</th>
-                  <th scope="col" className="pb-2 pr-4 font-medium">Status</th>
-                  <th scope="col" className="pb-2 pr-4 font-medium">Due</th>
-                  <th scope="col" className="pb-2 pr-4 font-medium">Paid</th>
-                  <th scope="col" className="pb-2 font-medium">Due date</th>
+                  <th scope="col" className="pb-2 pr-4 font-medium">Élève</th>
+                  <th scope="col" className="pb-2 pr-4 font-medium">Classe</th>
+                  <th scope="col" className="pb-2 pr-4 font-medium">Statut</th>
+                  <th scope="col" className="pb-2 pr-4 font-medium">Dû</th>
+                  <th scope="col" className="pb-2 pr-4 font-medium">Payé</th>
+                  <th scope="col" className="pb-2 font-medium">Date d'échéance</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -212,7 +212,7 @@ export function TeacherDetailPage() {
                     <td className="py-3 pr-4 text-ink-500">{formatCurrency(r.amountDue)}</td>
                     <td className="py-3 pr-4 text-ink-500">{formatCurrency(r.amountPaid)}</td>
                     <td className="py-3 text-ink-500">
-                      {r.dueDate ? new Date(r.dueDate).toLocaleDateString() : "—"}
+                      {r.dueDate ? formatDate(r.dueDate) : "—"}
                     </td>
                   </tr>
                 ))}
@@ -223,10 +223,10 @@ export function TeacherDetailPage() {
       </div>
 
       <div className="mt-6">
-        <h2 className="text-sm font-medium text-ink-700">Recent feed activity</h2>
+        <h2 className="text-sm font-medium text-ink-700">Activité récente des publications</h2>
         {data.posts.length === 0 ? (
           <div className="mt-3">
-            <EmptyState title="No posts yet" />
+            <EmptyState title="Aucune publication pour le moment" />
           </div>
         ) : (
           <div className="mt-3 space-y-3">
@@ -239,14 +239,14 @@ export function TeacherDetailPage() {
                     </span>
                     {p.class && <span className="text-xs text-ink-400">{p.class.name}</span>}
                   </div>
-                  <span className="text-xs text-ink-400">{new Date(p.createdAt).toLocaleDateString()}</span>
+                  <span className="text-xs text-ink-400">{formatDate(p.createdAt)}</span>
                 </div>
                 {p.content && <p className="mt-2 text-sm text-ink-900">{p.content}</p>}
                 {p.type === "EXAM" && (
                   <p className="mt-2 text-xs text-ink-500">
-                    {p.submissions?.length ?? 0} submission{(p.submissions?.length ?? 0) === 1 ? "" : "s"} ·{" "}
-                    {p.submissions?.filter((s) => s.grade !== null).length ?? 0} graded
-                    {p.dueDate && ` · due ${new Date(p.dueDate).toLocaleDateString()}`}
+                    {p.submissions?.length ?? 0} soumission{(p.submissions?.length ?? 0) === 1 ? "" : "s"} ·{" "}
+                    {p.submissions?.filter((s) => s.grade !== null).length ?? 0} notée{(p.submissions?.filter((s) => s.grade !== null).length ?? 0) === 1 ? "" : "s"}
+                    {p.dueDate && ` · échéance : ${formatDate(p.dueDate)}`}
                   </p>
                 )}
               </Card>
