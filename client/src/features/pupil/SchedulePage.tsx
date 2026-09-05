@@ -2,16 +2,16 @@ import { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
-  cancelVisitRequest,
-  createVisitRequest,
+  cancelSwapRequest,
+  createSwapRequest,
   fetchOtherClasses,
-  fetchOwnVisitRequests,
+  fetchOwnSwapRequests,
   fetchPupilSchedule,
 } from "../../api/pupil";
 import { extractErrorMessage } from "../../api/client";
 import { Button } from "../../components/Button";
 import { Card } from "../../components/Card";
-import { ClassTypeBadge, VisitStatusBadge } from "../../components/Badge";
+import { SwapStatusBadge } from "../../components/Badge";
 import { EmptyState, ErrorState, Spinner } from "../../components/Feedback";
 import { ScheduleView } from "../../components/ScheduleView";
 import { DAY_NAMES } from "../../lib/period";
@@ -20,24 +20,32 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function VisitRequestForm() {
+export function SwapRequestForm() {
   const queryClient = useQueryClient();
   const otherClassesQuery = useQuery({ queryKey: ["pupil", "other-classes"], queryFn: fetchOtherClasses });
-  const [classId, setClassId] = useState("");
-  const [sessionDate, setSessionDate] = useState("");
+  const [originDate, setOriginDate] = useState("");
+  const [targetClassId, setTargetClassId] = useState("");
+  const [targetDate, setTargetDate] = useState("");
   const [reason, setReason] = useState("");
 
   const classes = otherClassesQuery.data ?? [];
-  const activeClassId = classId || classes[0]?.id || "";
+  const activeClassId = targetClassId || classes[0]?.id || "";
   const selectedClass = classes.find((c) => c.id === activeClassId);
 
   const mutation = useMutation({
-    mutationFn: () => createVisitRequest({ classId: activeClassId, sessionDate, reason: reason.trim() || undefined }),
+    mutationFn: () =>
+      createSwapRequest({
+        originDate,
+        targetClassId: activeClassId,
+        targetDate,
+        reason: reason.trim() || undefined,
+      }),
     onSuccess: () => {
-      toast.success("Visit request sent.");
-      setSessionDate("");
+      toast.success("Swap request sent.");
+      setOriginDate("");
+      setTargetDate("");
       setReason("");
-      queryClient.invalidateQueries({ queryKey: ["pupil", "visit-requests"] });
+      queryClient.invalidateQueries({ queryKey: ["pupil", "swap-requests"] });
     },
   });
 
@@ -46,7 +54,7 @@ function VisitRequestForm() {
   if (classes.length === 0) {
     return (
       <EmptyState
-        title="No other classes to visit"
+        title="No other classes to join"
         description="Your teacher only has the class you're already enrolled in."
       />
     );
@@ -57,16 +65,30 @@ function VisitRequestForm() {
       className="space-y-3"
       onSubmit={(e) => {
         e.preventDefault();
-        if (!activeClassId || !sessionDate) return;
+        if (!originDate || !activeClassId || !targetDate) return;
         mutation.mutate();
       }}
     >
       <div>
-        <label htmlFor="visit-request-class" className="text-sm font-medium text-ink-700">Class</label>
+        <label htmlFor="swap-request-origin-date" className="text-sm font-medium text-ink-700">Session you'll miss</label>
+        <input
+          id="swap-request-origin-date"
+          required
+          aria-required="true"
+          type="date"
+          min={todayIso()}
+          value={originDate}
+          onChange={(e) => setOriginDate(e.target.value)}
+          className="mt-1 w-full rounded-sm border border-border-strong px-3 py-2 text-sm focus-ring"
+        />
+      </div>
+
+      <div>
+        <label htmlFor="swap-request-target-class" className="text-sm font-medium text-ink-700">Class to join</label>
         <select
-          id="visit-request-class"
+          id="swap-request-target-class"
           value={activeClassId}
-          onChange={(e) => setClassId(e.target.value)}
+          onChange={(e) => setTargetClassId(e.target.value)}
           className="mt-1 w-full rounded-sm border border-border-strong px-3 py-2 text-sm focus-ring"
         >
           {classes.map((c) => (
@@ -89,23 +111,23 @@ function VisitRequestForm() {
       </div>
 
       <div>
-        <label htmlFor="visit-request-session-date" className="text-sm font-medium text-ink-700">Session date</label>
+        <label htmlFor="swap-request-target-date" className="text-sm font-medium text-ink-700">Date to attend</label>
         <input
-          id="visit-request-session-date"
+          id="swap-request-target-date"
           required
           aria-required="true"
           type="date"
           min={todayIso()}
-          value={sessionDate}
-          onChange={(e) => setSessionDate(e.target.value)}
+          value={targetDate}
+          onChange={(e) => setTargetDate(e.target.value)}
           className="mt-1 w-full rounded-sm border border-border-strong px-3 py-2 text-sm focus-ring"
         />
       </div>
 
       <div>
-        <label htmlFor="visit-request-reason" className="text-sm font-medium text-ink-700">Reason (optional)</label>
+        <label htmlFor="swap-request-reason" className="text-sm font-medium text-ink-700">Reason (optional)</label>
         <textarea
-          id="visit-request-reason"
+          id="swap-request-reason"
           value={reason}
           onChange={(e) => setReason(e.target.value)}
           rows={2}
@@ -116,27 +138,27 @@ function VisitRequestForm() {
 
       {mutation.isError && <ErrorState message={extractErrorMessage(mutation.error)} />}
 
-      <Button type="submit" size="sm" disabled={mutation.isPending || !sessionDate}>
-        {mutation.isPending ? "Sending…" : "Send request"}
+      <Button type="submit" size="sm" disabled={mutation.isPending || !originDate || !targetDate}>
+        {mutation.isPending ? "Sending…" : "Request swap"}
       </Button>
     </form>
   );
 }
 
-function MyVisitRequests() {
+function MySwapRequests() {
   const queryClient = useQueryClient();
-  const requestsQuery = useQuery({ queryKey: ["pupil", "visit-requests"], queryFn: fetchOwnVisitRequests });
+  const requestsQuery = useQuery({ queryKey: ["pupil", "swap-requests"], queryFn: fetchOwnSwapRequests });
 
   const cancelMutation = useMutation({
-    mutationFn: (id: string) => cancelVisitRequest(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pupil", "visit-requests"] }),
+    mutationFn: (id: string) => cancelSwapRequest(id),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ["pupil", "swap-requests"] }),
   });
 
   if (requestsQuery.isLoading) return <Spinner />;
 
   const requests = requestsQuery.data ?? [];
   if (requests.length === 0) {
-    return <EmptyState title="No visit requests yet" description="Requests you send will show up here." />;
+    return <EmptyState title="No swap requests yet" description="Requests you send will show up here." />;
   }
 
   return (
@@ -145,11 +167,17 @@ function MyVisitRequests() {
         <li key={r.id} className="rounded-sm bg-canvas p-3">
           <div className="flex flex-wrap items-start justify-between gap-2">
             <div>
-              <p className="text-sm font-medium text-ink-900">
-                {r.className} <ClassTypeBadge type={r.classType} />
-              </p>
+              <p className="text-sm font-medium text-ink-900">{r.targetClassName}</p>
               <p className="mt-1 text-xs text-ink-500">
-                {new Date(r.sessionDate).toLocaleDateString(undefined, {
+                {new Date(r.targetDate).toLocaleDateString(undefined, {
+                  weekday: "short",
+                  month: "short",
+                  day: "numeric",
+                })}
+              </p>
+              <p className="mt-1 text-xs text-ink-400">
+                instead of {r.originClassName} on{" "}
+                {new Date(r.originDate).toLocaleDateString(undefined, {
                   weekday: "short",
                   month: "short",
                   day: "numeric",
@@ -158,7 +186,7 @@ function MyVisitRequests() {
               {r.reason && <p className="mt-1 text-xs italic text-ink-400">"{r.reason}"</p>}
             </div>
             <div className="flex items-center gap-2">
-              <VisitStatusBadge status={r.status} />
+              <SwapStatusBadge status={r.status} />
               {r.status === "PENDING" && (
                 <button
                   onClick={() => cancelMutation.mutate(r.id)}
@@ -192,19 +220,19 @@ export function PupilSchedulePage() {
 
       <div className="mt-8 grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card className="p-5">
-          <h2 className="text-sm font-medium text-ink-700">Visit another class</h2>
+          <h2 className="text-sm font-medium text-ink-700">Swap a session</h2>
           <p className="mt-1 text-xs text-ink-400">
-            Attending somewhere else one day? Request to sit in on a different class's session.
+            Need to swap your usual class for a different one on a particular day? Request it here.
           </p>
           <div className="mt-3">
-            <VisitRequestForm />
+            <SwapRequestForm />
           </div>
         </Card>
 
         <Card className="p-5">
-          <h2 className="text-sm font-medium text-ink-700">My visit requests</h2>
+          <h2 className="text-sm font-medium text-ink-700">My swap requests</h2>
           <div className="mt-3">
-            <MyVisitRequests />
+            <MySwapRequests />
           </div>
         </Card>
       </div>
