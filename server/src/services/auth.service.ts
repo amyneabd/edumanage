@@ -1,12 +1,10 @@
-import crypto from "node:crypto";
 import { prisma } from "../utils/prisma.js";
-import { hashPassword, verifyPassword } from "../utils/password.js";
+import { supabaseAuth, createAuthClient } from "../utils/supabaseAuth.js";
 import { generateTeacherCode, generateParentCode } from "../utils/teacherCode.js";
 import { createNotification } from "./notification.service.js";
+import { env } from "../utils/env.js";
 import type { ClassType, User } from "@prisma/client";
-
-const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
-const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+import type { Session } from "@supabase/supabase-js";
 
 const CLASS_TYPE_LABELS_LOWER: Record<ClassType, string> = {
   SCIENCE: "sciences",
@@ -15,35 +13,35 @@ const CLASS_TYPE_LABELS_LOWER: Record<ClassType, string> = {
   ECO: "économie",
 };
 
-function hashResetToken(token: string): string {
-  return crypto.createHash("sha256").update(token).digest("hex");
-}
-
-function hashVerificationToken(token: string): string {
-  return crypto.createHash("sha256").update(token).digest("hex");
-}
-
 export class AuthError extends Error {
-  constructor(message: string, public status = 400) {
+  constructor(message: string, public status = 400, public code?: string) {
     super(message);
   }
+}
+
+async function createSupabaseUser(email: string, password: string): Promise<string> {
+  const { data, error } = await supabaseAuth.auth.signUp({ email, password });
+  if (error) {
+    if (error.status === 422 || /already registered/i.test(error.message)) {
+      throw new AuthError("Un compte avec cet e-mail existe déjà.", 409);
+    }
+    throw new AuthError(error.message, 400);
+  }
+  return data.user!.id;
 }
 
 export async function registerTeacher(input: { email: string; password: string; name: string }) {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) throw new AuthError("Un compte avec cet e-mail existe déjà.", 409);
-
-  const passwordHash = await hashPassword(input.password);
-
+  const supabaseId = await createSupabaseUser(input.email, input.password);
   let teacherCode = generateTeacherCode();
   while (await prisma.teacherProfile.findUnique({ where: { teacherCode } })) {
     teacherCode = generateTeacherCode();
   }
-
   const user = await prisma.user.create({
     data: {
       email: input.email,
-      passwordHash,
+      supabaseId,
       name: input.name,
       role: "TEACHER",
       status: "PENDING",
@@ -51,7 +49,6 @@ export async function registerTeacher(input: { email: string; password: string; 
     },
     include: { teacherProfile: true },
   });
-
   return user;
 }
 
@@ -66,7 +63,6 @@ export async function registerPupil(input: {
 }) {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) throw new AuthError("Un compte avec cet e-mail existe déjà.", 409);
-
   const teacherProfile = await prisma.teacherProfile.findUnique({
     where: { teacherCode: input.teacherCode.toUpperCase() },
     include: { user: true },
@@ -74,18 +70,15 @@ export async function registerPupil(input: {
   if (!teacherProfile || teacherProfile.user.status !== "ACTIVE") {
     throw new AuthError("Aucun enseignant actif trouvé avec cet identifiant enseignant.", 404);
   }
-
-  const passwordHash = await hashPassword(input.password);
-
+  const supabaseId = await createSupabaseUser(input.email, input.password);
   let parentCode = generateParentCode();
   while (await prisma.pupilProfile.findUnique({ where: { parentCode } })) {
     parentCode = generateParentCode();
   }
-
   const user = await prisma.user.create({
     data: {
       email: input.email,
-      passwordHash,
+      supabaseId,
       name: input.name,
       role: "PUPIL",
       status: "PENDING",
@@ -101,7 +94,6 @@ export async function registerPupil(input: {
     },
     include: { pupilProfile: true },
   });
-
   await createNotification({
     teacherId: teacherProfile.userId,
     type: "PUPIL_REQUEST",
@@ -110,20 +102,17 @@ export async function registerPupil(input: {
     link: "/teacher/classes",
     dedupeKey: `pupil-request:${user.id}`,
   });
-
   return user;
 }
 
 export async function registerParent(input: { email: string; password: string; name: string }) {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
   if (existing) throw new AuthError("Un compte avec cet e-mail existe déjà.", 409);
-
-  const passwordHash = await hashPassword(input.password);
-
+  const supabaseId = await createSupabaseUser(input.email, input.password);
   const user = await prisma.user.create({
     data: {
       email: input.email,
-      passwordHash,
+      supabaseId,
       name: input.name,
       role: "PARENT",
       status: "ACTIVE",
@@ -131,97 +120,74 @@ export async function registerParent(input: { email: string; password: string; n
     },
     include: { parentProfile: true },
   });
-
   return user;
 }
 
-export async function login(email: string, password: string) {
-  const user = await prisma.user.findUnique({ where: { email } });
+export interface LoginResult {
+  user: User;
+  session: Session;
+}
+
+export async function login(email: string, password: string): Promise<LoginResult> {
+  const { data, error } = await supabaseAuth.auth.signInWithPassword({ email, password });
+  if (error) {
+    if (/email not confirmed/i.test(error.message)) {
+      throw new AuthError("Veuillez vérifier votre e-mail avant de vous connecter.", 403, "EMAIL_NOT_CONFIRMED");
+    }
+    throw new AuthError("E-mail ou mot de passe invalide.", 401);
+  }
+  const user = await prisma.user.findUnique({ where: { supabaseId: data.user.id } });
   if (!user) throw new AuthError("E-mail ou mot de passe invalide.", 401);
-
-  const valid = await verifyPassword(password, user.passwordHash);
-  if (!valid) throw new AuthError("E-mail ou mot de passe invalide.", 401);
-
-  return user;
+  return { user, session: data.session };
 }
 
-/**
- * Issues a password reset token for the given email, if an account with
- * that email exists. Callers must respond identically whether or not a
- * user was found, to avoid leaking which emails are registered.
- */
-export async function requestPasswordReset(email: string): Promise<{ token: string; user: User } | null> {
-  const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) return null;
-
-  const rawToken = crypto.randomBytes(32).toString("hex");
-  const tokenHash = hashResetToken(rawToken);
-  const expiresAt = new Date(Date.now() + RESET_TOKEN_TTL_MS);
-
-  // Invalidate any previously issued, still-outstanding tokens for this user.
-  await prisma.passwordResetToken.deleteMany({ where: { userId: user.id, usedAt: null } });
-  await prisma.passwordResetToken.create({ data: { userId: user.id, tokenHash, expiresAt } });
-
-  return { token: rawToken, user };
+export async function resendVerification(email: string): Promise<void> {
+  const { error } = await supabaseAuth.auth.resend({ type: "signup", email });
+  if (error) throw new AuthError(error.message, 400);
 }
 
-export async function resetPassword(token: string, newPassword: string): Promise<void> {
-  const tokenHash = hashResetToken(token);
-  const record = await prisma.passwordResetToken.findUnique({ where: { tokenHash } });
-
-  if (!record || record.usedAt || record.expiresAt < new Date()) {
-    throw new AuthError("Ce lien de réinitialisation est invalide ou a expiré.", 400);
-  }
-
-  const passwordHash = await hashPassword(newPassword);
-  await prisma.$transaction([
-    prisma.user.update({ where: { id: record.userId }, data: { passwordHash } }),
-    prisma.passwordResetToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
-  ]);
+export interface VerifiedSession {
+  user: User;
+  session: Session;
 }
 
-/** Issues a fresh email verification token for a user, invalidating any previously issued ones. */
-export async function issueEmailVerificationToken(userId: string): Promise<string> {
-  const rawToken = crypto.randomBytes(32).toString("hex");
-  const tokenHash = hashVerificationToken(rawToken);
-  const expiresAt = new Date(Date.now() + VERIFICATION_TOKEN_TTL_MS);
-
-  await prisma.emailVerificationToken.deleteMany({ where: { userId, usedAt: null } });
-  await prisma.emailVerificationToken.create({ data: { userId, tokenHash, expiresAt } });
-
-  return rawToken;
+export async function verifyEmail(tokenHash: string): Promise<VerifiedSession> {
+  const { data, error } = await supabaseAuth.auth.verifyOtp({ token_hash: tokenHash, type: "signup" });
+  if (error || !data.session) throw new AuthError("Ce lien de vérification est invalide ou a expiré.", 400);
+  const user = await prisma.user.findUnique({ where: { supabaseId: data.session.user.id } });
+  if (!user) throw new AuthError("Utilisateur introuvable.", 404);
+  return { user, session: data.session };
 }
 
-export async function verifyEmail(token: string): Promise<void> {
-  const tokenHash = hashVerificationToken(token);
-  const record = await prisma.emailVerificationToken.findUnique({ where: { tokenHash } });
-
-  if (!record || record.usedAt || record.expiresAt < new Date()) {
-    throw new AuthError("Ce lien de vérification est invalide ou a expiré.", 400);
-  }
-
-  await prisma.$transaction([
-    prisma.user.update({ where: { id: record.userId }, data: { emailVerifiedAt: new Date() } }),
-    prisma.emailVerificationToken.update({ where: { id: record.id }, data: { usedAt: new Date() } }),
-  ]);
+export async function requestPasswordReset(email: string): Promise<void> {
+  await supabaseAuth.auth.resetPasswordForEmail(email, { redirectTo: `${env.clientOrigin}/reset-password` });
 }
 
-/** Re-issues a verification token for the given user, unless they're already verified. */
-export async function resendVerificationEmail(userId: string): Promise<{ token: string; email: string } | null> {
-  const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user || user.emailVerifiedAt) return null;
+// Uses a freshly-constructed client (not the shared singleton) so a
+// concurrent request's session can't get mixed up with this one between
+// verifyOtp and updateUser.
+export async function completePasswordReset(tokenHash: string, newPassword: string): Promise<Session> {
+  const scoped = createAuthClient();
+  const { data, error } = await scoped.auth.verifyOtp({ token_hash: tokenHash, type: "recovery" });
+  if (error || !data.session) throw new AuthError("Ce lien de réinitialisation est invalide ou a expiré.", 400);
+  const { error: updateError } = await scoped.auth.updateUser({ password: newPassword });
+  if (updateError) throw new AuthError(updateError.message, 400);
+  return data.session;
+}
 
-  const token = await issueEmailVerificationToken(userId);
-  return { token, email: user.email };
+export async function logout(accessToken: string | undefined, refreshToken: string | undefined): Promise<void> {
+  if (!accessToken || !refreshToken) return;
+  const scoped = createAuthClient();
+  await scoped.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+  await scoped.auth.signOut();
 }
 
 export async function changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new AuthError("Utilisateur introuvable.", 404);
-
-  const valid = await verifyPassword(currentPassword, user.passwordHash);
-  if (!valid) throw new AuthError("Le mot de passe actuel est incorrect.", 400);
-
-  const passwordHash = await hashPassword(newPassword);
-  await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
+  const scoped = createAuthClient();
+  const { error: signInError } = await scoped.auth.signInWithPassword({ email: user.email, password: currentPassword });
+  if (signInError) throw new AuthError("Le mot de passe actuel est incorrect.", 400);
+  const { error } = await scoped.auth.updateUser({ password: newPassword });
+  if (error) throw new AuthError(error.message, 400);
 }
