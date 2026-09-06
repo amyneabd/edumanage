@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../utils/prisma.js";
-import { hashPassword } from "../utils/password.js";
+import { randomUUID } from "node:crypto";
 import {
   getAttendanceCalendar,
   getAttendanceOverviewForTeacher,
@@ -55,11 +55,10 @@ function periodKey(d: Date): string {
 }
 
 beforeAll(async () => {
-  const passwordHash = await hashPassword("initial-Pass1");
   const teacher = await prisma.user.create({
     data: {
       email: TEST_EMAIL,
-      passwordHash,
+      supabaseId: randomUUID(),
       name: "Attendance Vacation Test Teacher",
       role: "TEACHER",
       status: "ACTIVE",
@@ -77,7 +76,7 @@ beforeAll(async () => {
   const pupil = await prisma.user.create({
     data: {
       email: `test-attendance-vacation-pupil-${Date.now()}@example.com`,
-      passwordHash,
+      supabaseId: randomUUID(),
       name: "Attendance Vacation Test Pupil",
       role: "PUPIL",
       status: "ACTIVE",
@@ -233,11 +232,10 @@ describe("getPupilDetail", () => {
   });
 
   it("returns the linked parent's name once an ACTIVE ParentLink exists", async () => {
-    const passwordHash = await hashPassword("initial-Pass1");
     const parent = await prisma.user.create({
       data: {
         email: `test-attendance-vacation-parent-${Date.now()}@example.com`,
-        passwordHash,
+        supabaseId: randomUUID(),
         name: "Attendance Vacation Test Parent",
         role: "PARENT",
         status: "ACTIVE",
@@ -256,11 +254,10 @@ describe("getPupilDetail", () => {
   });
 
   it("ignores a PENDING ParentLink when resolving the parent's name", async () => {
-    const passwordHash = await hashPassword("initial-Pass1");
     const parent = await prisma.user.create({
       data: {
         email: `test-attendance-vacation-parent-pending-${Date.now()}@example.com`,
-        passwordHash,
+        supabaseId: randomUUID(),
         name: "Pending Parent",
         role: "PARENT",
         status: "ACTIVE",

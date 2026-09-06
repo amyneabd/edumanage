@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../utils/prisma.js";
-import { hashPassword } from "../utils/password.js";
+import { randomUUID } from "node:crypto";
 import { currentPeriod, previousPeriod } from "../utils/period.js";
 import { PaymentError, getOwnLedger, getPupilLedger, setPaymentStatus } from "./payment.service.js";
 
@@ -15,11 +15,10 @@ function dateInPeriod(period: string, day: number): Date {
 }
 
 beforeAll(async () => {
-  const passwordHash = await hashPassword("initial-Pass1");
   const teacher = await prisma.user.create({
     data: {
       email: TEST_EMAIL,
-      passwordHash,
+      supabaseId: randomUUID(),
       name: "Pupil Ledger Test Teacher",
       role: "TEACHER",
       status: "ACTIVE",
@@ -38,7 +37,7 @@ beforeAll(async () => {
   const pupil = await prisma.user.create({
     data: {
       email: `test-pupil-ledger-pupil-${Date.now()}@example.com`,
-      passwordHash,
+      supabaseId: randomUUID(),
       name: "Pupil Ledger Test Pupil",
       role: "PUPIL",
       status: "ACTIVE",

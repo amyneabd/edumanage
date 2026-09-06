@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../utils/prisma.js";
-import { hashPassword } from "../utils/password.js";
+import { randomUUID } from "node:crypto";
 import {
   SwapError,
   listOtherClassesForPupil,
@@ -32,12 +32,10 @@ function dateKey(d: Date): string {
 }
 
 beforeAll(async () => {
-  const passwordHash = await hashPassword("initial-Pass1");
-
   const teacher = await prisma.user.create({
     data: {
       email: `${TEST_TAG}-teacher@example.com`,
-      passwordHash,
+      supabaseId: randomUUID(),
       name: "Swap Test Teacher",
       role: "TEACHER",
       status: "ACTIVE",
@@ -61,7 +59,7 @@ beforeAll(async () => {
   const otherTeacher = await prisma.user.create({
     data: {
       email: `${TEST_TAG}-other-teacher@example.com`,
-      passwordHash,
+      supabaseId: randomUUID(),
       name: "Other Teacher",
       role: "TEACHER",
       status: "ACTIVE",
@@ -78,7 +76,7 @@ beforeAll(async () => {
   const pupil = await prisma.user.create({
     data: {
       email: `${TEST_TAG}-pupil@example.com`,
-      passwordHash,
+      supabaseId: randomUUID(),
       name: "Swap Test Pupil",
       role: "PUPIL",
       status: "ACTIVE",

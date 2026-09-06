@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from "vitest";
 import { prisma } from "../utils/prisma.js";
-import { hashPassword } from "../utils/password.js";
+import { randomUUID } from "node:crypto";
 import {
   VacationError,
   addVacationSession,
@@ -32,11 +32,10 @@ function localDateFromKey(key: string): Date {
 }
 
 beforeAll(async () => {
-  const passwordHash = await hashPassword("initial-Pass1");
   const user = await prisma.user.create({
     data: {
       email: TEST_EMAIL,
-      passwordHash,
+      supabaseId: randomUUID(),
       name: "Vacation Service Test Teacher",
       role: "TEACHER",
       status: "ACTIVE",
