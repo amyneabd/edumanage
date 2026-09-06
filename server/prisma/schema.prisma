@@ -78,41 +78,14 @@ enum VacationStatus {
 model User {
   id                     String                  @id @default(cuid())
   email                  String                  @unique
-  passwordHash           String
+  supabaseId             String                  @unique
   name                   String
   role                   Role
   status                 UserStatus              @default(PENDING)
-  emailVerifiedAt        DateTime?
   createdAt              DateTime                @default(now())
   teacherProfile         TeacherProfile?
   pupilProfile           PupilProfile?
   parentProfile          ParentProfile?
-  passwordResetTokens    PasswordResetToken[]
-  emailVerificationTokens EmailVerificationToken[]
-}
-
-model PasswordResetToken {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String    @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-
-  @@index([userId])
-}
-
-model EmailVerificationToken {
-  id        String    @id @default(cuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  tokenHash String    @unique
-  expiresAt DateTime
-  usedAt    DateTime?
-  createdAt DateTime  @default(now())
-
-  @@index([userId])
 }
 
 model TeacherProfile {
