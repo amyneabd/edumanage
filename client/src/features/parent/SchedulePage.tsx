@@ -20,14 +20,14 @@ export function ParentSchedulePage() {
 
   return (
     <div>
-      <h1 className="text-2xl font-semibold text-ink-900">Schedule</h1>
+      <h1 className="text-2xl font-semibold text-ink-900">Emploi du temps</h1>
       <div className="mt-4">
         <ChildSwitcher />
       </div>
 
       {!pupilId ? (
         <Card className="mt-6 p-5">
-          <EmptyState title="No linked children yet" description="Add a child using their Parent Code to get started." />
+          <EmptyState title="Aucun enfant associé pour le moment" description="Ajoutez un enfant à l'aide de son code parent pour commencer." />
         </Card>
       ) : scheduleQuery.isLoading || !data ? (
         <Spinner />

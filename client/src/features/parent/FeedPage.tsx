@@ -5,16 +5,17 @@ import { Paperclip } from "lucide-react";
 import { fetchChildPosts } from "../../api/parent";
 import { Card } from "../../components/Card";
 import { EmptyState, Spinner } from "../../components/Feedback";
+import { formatDate } from "../../lib/period";
 import { useSelectedChild } from "./useSelectedChild";
 import { ChildSwitcher } from "./ChildSwitcher";
 import type { PostType } from "../../api/types";
 
-const TYPE_LABELS: Record<PostType, string> = { TEXT: "Post", FILE: "File", EXAM: "Exam" };
+const TYPE_LABELS: Record<PostType, string> = { TEXT: "Publication", FILE: "Fichier", EXAM: "Examen" };
 const TYPE_FILTERS: { value: PostType | "ALL"; label: string }[] = [
-  { value: "ALL", label: "All" },
-  { value: "TEXT", label: "Posts" },
-  { value: "FILE", label: "Files" },
-  { value: "EXAM", label: "Exams" },
+  { value: "ALL", label: "Tous" },
+  { value: "TEXT", label: "Publications" },
+  { value: "FILE", label: "Fichiers" },
+  { value: "EXAM", label: "Examens" },
 ];
 
 function daysUntil(dueDate: string): number {
@@ -28,7 +29,7 @@ function daysUntil(dueDate: string): number {
 function DueBadge({ dueDate }: { dueDate: string }) {
   const diff = daysUntil(dueDate);
   const overdue = diff < 0;
-  const label = overdue ? "Overdue" : diff === 0 ? "Due today" : diff === 1 ? "Due tomorrow" : `Due in ${diff}d`;
+  const label = overdue ? "En retard" : diff === 0 ? "À rendre aujourd'hui" : diff === 1 ? "À rendre demain" : `À rendre dans ${diff} j`;
   return (
     <span
       className={clsx(
@@ -70,14 +71,14 @@ export function ParentFeedPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-semibold text-ink-900">Class feed</h1>
+      <h1 className="text-2xl font-semibold text-ink-900">Publications de la classe</h1>
       <div className="mt-4">
         <ChildSwitcher />
       </div>
 
       {!pupilId ? (
         <Card className="mt-6 p-5">
-          <EmptyState title="No linked children yet" description="Add a child using their Parent Code to get started." />
+          <EmptyState title="Aucun enfant associé pour le moment" description="Ajoutez un enfant à l'aide de son code parent pour commencer." />
         </Card>
       ) : isLoading ? (
         <Spinner />
@@ -89,7 +90,7 @@ export function ParentFeedPage() {
                 type="text"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search posts…"
+                placeholder="Rechercher des publications…"
                 className="min-w-[10rem] flex-1 rounded-sm border border-border-strong px-3 py-1.5 text-sm focus-ring"
               />
               <div className="flex items-center gap-1 rounded-sm border border-border p-0.5">
@@ -112,9 +113,9 @@ export function ParentFeedPage() {
 
           <div className="mt-4 space-y-4">
             {!posts.length ? (
-              <EmptyState title="No posts yet" description="The teacher hasn't posted anything." />
+              <EmptyState title="Aucune publication pour le moment" description="L'enseignant n'a encore rien publié." />
             ) : !filteredPosts.length ? (
-              <EmptyState title="No posts match your filters" />
+              <EmptyState title="Aucune publication ne correspond à vos filtres" />
             ) : (
               filteredPosts.map((post) => (
                 <Card key={post.id} className="p-4">
@@ -126,9 +127,9 @@ export function ParentFeedPage() {
                       {post.editedAt && (
                         <span
                           className="text-xs italic text-ink-400"
-                          title={`Edited ${new Date(post.editedAt).toLocaleString()}`}
+                          title={`Modifié ${new Date(post.editedAt).toLocaleString()}`}
                         >
-                          · edited
+                          · modifié
                         </span>
                       )}
                       {post.type === "EXAM" && !post.mySubmission && post.dueDate && <DueBadge dueDate={post.dueDate} />}
@@ -149,13 +150,13 @@ export function ParentFeedPage() {
                   {post.type === "EXAM" && (
                     <div className="mt-2 border-t border-border pt-3">
                       {post.dueDate && (
-                        <p className="text-xs text-ink-500">Due {new Date(post.dueDate).toLocaleDateString()}</p>
+                        <p className="text-xs text-ink-500">Échéance {formatDate(post.dueDate)}</p>
                       )}
                       {post.mySubmission ? (
                         <div>
                           <p className="mt-1 text-xs font-medium text-success-600">
-                            Submitted: {post.mySubmission.fileName} on{" "}
-                            {new Date(post.mySubmission.submittedAt).toLocaleDateString()}
+                            Soumis : {post.mySubmission.fileName} le{" "}
+                            {formatDate(post.mySubmission.submittedAt)}
                           </p>
                           {post.mySubmission.grade !== null ? (
                             <div className="mt-2 rounded-sm bg-canvas px-3 py-2">
@@ -179,11 +180,11 @@ export function ParentFeedPage() {
                               )}
                             </div>
                           ) : (
-                            <p className="mt-1 text-xs text-ink-400">Awaiting grade</p>
+                            <p className="mt-1 text-xs text-ink-400">En attente de note</p>
                           )}
                         </div>
                       ) : (
-                        <p className="mt-1 text-xs text-ink-400">Not yet submitted</p>
+                        <p className="mt-1 text-xs text-ink-400">Pas encore soumis</p>
                       )}
                     </div>
                   )}

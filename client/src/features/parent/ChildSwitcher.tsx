@@ -25,7 +25,7 @@ function AddChildModal({ open, onClose }: { open: boolean; onClose: () => void }
   const mutation = useMutation({
     mutationFn: () => requestParentLink(parentCode.trim().toUpperCase()),
     onSuccess: async () => {
-      toast.success("Link request sent — waiting on the teacher's approval.");
+      toast.success("Demande de liaison envoyée — en attente de l'approbation de l'enseignant.");
       setParentCode("");
       await queryClient.invalidateQueries({ queryKey: ["parent", "links"] });
       await queryClient.invalidateQueries({ queryKey: ["parent", "children"] });
@@ -34,7 +34,7 @@ function AddChildModal({ open, onClose }: { open: boolean; onClose: () => void }
   });
 
   return (
-    <Modal open={open} onClose={onClose} title="Link a child">
+    <Modal open={open} onClose={onClose} title="Associer un enfant">
       <form
         className="space-y-4"
         onSubmit={(e) => {
@@ -43,23 +43,23 @@ function AddChildModal({ open, onClose }: { open: boolean; onClose: () => void }
         }}
       >
         <div>
-          <label htmlFor="add-child-parent-code" className="text-sm font-medium text-ink-700">Parent Code</label>
+          <label htmlFor="add-child-parent-code" className="text-sm font-medium text-ink-700">Code parent</label>
           <input
             id="add-child-parent-code"
             required
             aria-required="true"
             value={parentCode}
             onChange={(e) => setParentCode(e.target.value)}
-            placeholder="e.g. PFBV9U"
+            placeholder="ex. PFBV9U"
             className="focus-ring mt-1 w-full rounded-sm border border-border-strong bg-surface px-3 py-2 text-sm uppercase tracking-wider text-ink-900"
           />
-          <p className="mt-1 text-xs text-ink-400">Ask your child for their Parent Code, shown on their Home page.</p>
+          <p className="mt-1 text-xs text-ink-400">Demandez à votre enfant son code parent, affiché sur sa page d'accueil.</p>
         </div>
 
         {mutation.isError && <ErrorState message={extractErrorMessage(mutation.error)} />}
 
         <Button type="submit" className="w-full" disabled={mutation.isPending || !parentCode.trim()}>
-          {mutation.isPending ? "Sending request…" : "Send request"}
+          {mutation.isPending ? "Envoi de la demande…" : "Envoyer la demande"}
         </Button>
       </form>
     </Modal>
@@ -100,19 +100,19 @@ export function ChildSwitcher() {
           className="focus-ring flex items-center gap-1.5 rounded-full border border-dashed border-border-strong px-3 py-1.5 text-sm font-medium text-ink-500 hover:bg-canvas"
         >
           <Plus className="h-3.5 w-3.5" strokeWidth={1.8} aria-hidden="true" />
-          Add a child
+          Ajouter un enfant
         </button>
       </div>
 
       {pendingOrRejected.length > 0 && (
         <Card className="mt-3 p-3">
-          <p className="text-xs font-medium uppercase tracking-wide text-ink-400">Link requests</p>
+          <p className="text-xs font-medium uppercase tracking-wide text-ink-400">Demandes de liaison</p>
           <ul className="mt-2 space-y-1.5">
             {pendingOrRejected.map((l) => (
               <li key={l.id} className="flex items-center justify-between gap-2 text-sm">
                 <span className="text-ink-700">{l.pupilName}</span>
                 <span className={clsx("rounded-full px-2 py-0.5 text-xs font-medium", linkStatusColors[l.status])}>
-                  {l.status === "PENDING" ? "Awaiting teacher approval" : "Declined"}
+                  {l.status === "PENDING" ? "En attente de l'approbation de l'enseignant" : "Refusée"}
                 </span>
               </li>
             ))}

@@ -5,6 +5,7 @@ import { fetchChildGrades } from "../../api/parent";
 import { Card } from "../../components/Card";
 import { StatCard } from "../../components/StatCard";
 import { EmptyState, Spinner } from "../../components/Feedback";
+import { formatDate } from "../../lib/period";
 import { useSelectedChild } from "./useSelectedChild";
 import { ChildSwitcher } from "./ChildSwitcher";
 
@@ -29,36 +30,36 @@ export function ParentGradesPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-semibold text-ink-900">Grades</h1>
+      <h1 className="text-2xl font-semibold text-ink-900">Notes</h1>
       <div className="mt-4">
         <ChildSwitcher />
       </div>
 
       {!pupilId ? (
         <Card className="mt-6 p-5">
-          <EmptyState title="No linked children yet" description="Add a child using their Parent Code to get started." />
+          <EmptyState title="Aucun enfant associé pour le moment" description="Ajoutez un enfant à l'aide de son code parent pour commencer." />
         </Card>
       ) : isLoading ? (
         <Spinner />
       ) : (
         <>
-          <p className="mt-4 text-sm text-ink-500">Exam results and teacher feedback.</p>
+          <p className="mt-4 text-sm text-ink-500">Résultats des examens et retours de l'enseignant.</p>
 
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <StatCard
-              label="Average score"
+              label="Moyenne"
               value={data?.average !== null && data?.average !== undefined ? `${data.average.toFixed(1)}%` : "—"}
               icon={<Sigma className="h-[18px] w-[18px]" strokeWidth={1.8} />}
               accent="bg-accent-50 text-accent-600"
             />
             <StatCard
-              label="Graded exams"
+              label="Examens corrigés"
               value={data?.gradedCount ?? 0}
               icon={<CheckCircle2 className="h-[18px] w-[18px]" strokeWidth={1.8} />}
               accent="bg-success-50 text-success-600"
             />
             <StatCard
-              label="Awaiting grade"
+              label="En attente de note"
               value={data?.pendingCount ?? 0}
               icon={<Hourglass className="h-[18px] w-[18px]" strokeWidth={1.8} />}
               accent={(data?.pendingCount ?? 0) > 0 ? "bg-accent-50 text-accent-600" : "bg-canvas text-ink-400"}
@@ -66,10 +67,10 @@ export function ParentGradesPage() {
           </div>
 
           <Card className="mt-4 p-5">
-            <h2 className="text-sm font-medium text-ink-700">Graded exams</h2>
+            <h2 className="text-sm font-medium text-ink-700">Examens corrigés</h2>
             {grades.length === 0 ? (
               <div className="mt-3">
-                <EmptyState title="No grades yet" description="Submitted exams will show grades here once the teacher reviews them." />
+                <EmptyState title="Aucune note pour le moment" description="Les notes des examens soumis s'afficheront ici une fois que l'enseignant les aura corrigés." />
               </div>
             ) : (
               <ul className="mt-3 space-y-3">
@@ -77,10 +78,10 @@ export function ParentGradesPage() {
                   <li key={g.submissionId} className="rounded-sm bg-canvas p-3">
                     <div className="flex flex-wrap items-start justify-between gap-2">
                       <div>
-                        <p className="text-sm font-medium text-ink-900">{g.examTitle ?? "Exam"}</p>
+                        <p className="text-sm font-medium text-ink-900">{g.examTitle ?? "Examen"}</p>
                         <p className="text-xs text-ink-500">
                           {g.className}
-                          {g.gradedAt && <span> · Graded {new Date(g.gradedAt).toLocaleDateString()}</span>}
+                          {g.gradedAt && <span> · Corrigé le {formatDate(g.gradedAt)}</span>}
                         </p>
                       </div>
                       <span className={clsx("inline-flex rounded-full px-2.5 py-1 text-xs font-semibold", percentTone(g.percent))}>

@@ -7,6 +7,7 @@ import { Card } from "../../components/Card";
 import { StatCard } from "../../components/StatCard";
 import { EmptyState, Spinner } from "../../components/Feedback";
 import { DAY_NAMES, currentPeriod, formatPeriodLabel, shiftPeriod } from "../../lib/period";
+import { ATTENDANCE_DISPLAY_LABELS } from "../../lib/labels";
 import { useSelectedChild } from "./useSelectedChild";
 import { ChildSwitcher } from "./ChildSwitcher";
 import type { AttendanceDay } from "../../api/types";
@@ -39,15 +40,6 @@ const DISPLAY_STYLES: Record<AttendanceDay["display"], string> = {
   ABSENT: "bg-danger-600 text-white",
   EXCUSED: "bg-warning-600 text-white",
   UNMARKED: "border-2 border-dashed border-border-strong text-ink-500",
-};
-
-const DISPLAY_LABELS: Record<AttendanceDay["display"], string> = {
-  FUTURE: "Upcoming session",
-  TODAY: "Today's session",
-  PRESENT: "Present",
-  ABSENT: "Absent",
-  EXCUSED: "Excused",
-  UNMARKED: "Not marked yet",
 };
 
 export function ParentAttendancePage() {
@@ -85,27 +77,27 @@ export function ParentAttendancePage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-semibold text-ink-900">Attendance</h1>
+      <h1 className="text-2xl font-semibold text-ink-900">Présences</h1>
       <div className="mt-4">
         <ChildSwitcher />
       </div>
 
       {!pupilId ? (
         <Card className="mt-6 p-5">
-          <EmptyState title="No linked children yet" description="Add a child using their Parent Code to get started." />
+          <EmptyState title="Aucun enfant associé pour le moment" description="Ajoutez un enfant à l'aide de son code parent pour commencer." />
         </Card>
       ) : (
         <>
-          <p className="mt-4 text-sm text-ink-500">{data?.className ?? "Class"}</p>
+          <p className="mt-4 text-sm text-ink-500">{data?.className ?? "Classe"}</p>
 
           <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
             <StatCard
-              label="Attendance rate"
+              label="Taux de présence"
               value={stats.rate !== null ? `${stats.rate}%` : "—"}
               icon={<ClipboardCheck className="h-[18px] w-[18px]" strokeWidth={1.8} />}
             />
             <StatCard
-              label="Present"
+              label="Présent"
               value={stats.present}
               icon={<CheckCircle2 className="h-[18px] w-[18px]" strokeWidth={1.8} />}
               accent="bg-success-50 text-success-600"
@@ -120,13 +112,13 @@ export function ParentAttendancePage() {
 
           <Card className="mt-4 p-5">
             <div className="flex items-center justify-between">
-              <h2 className="text-sm font-medium text-ink-700">Calendar</h2>
+              <h2 className="text-sm font-medium text-ink-700">Calendrier</h2>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setPeriod(shiftPeriod(period, -1))}
                   className="focus-ring flex h-11 w-11 items-center justify-center rounded-sm border border-border text-ink-500 hover:bg-canvas"
-                  title="Previous month"
+                  title="Mois précédent"
                 >
                   <ChevronLeft className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
                 </button>
@@ -135,7 +127,7 @@ export function ParentAttendancePage() {
                   type="button"
                   onClick={() => setPeriod(shiftPeriod(period, 1))}
                   className="focus-ring flex h-11 w-11 items-center justify-center rounded-sm border border-border text-ink-500 hover:bg-canvas"
-                  title="Next month"
+                  title="Mois suivant"
                 >
                   <ChevronRight className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
                 </button>
@@ -145,9 +137,9 @@ export function ParentAttendancePage() {
             {isLoading ? (
               <Spinner />
             ) : !data?.className ? (
-              <p className="mt-6 text-center text-sm text-ink-700">Not assigned to a class yet.</p>
+              <p className="mt-6 text-center text-sm text-ink-700">Pas encore affecté à une classe.</p>
             ) : days.length === 0 ? (
-              <p className="mt-6 text-center text-sm text-ink-700">No sessions scheduled for this class.</p>
+              <p className="mt-6 text-center text-sm text-ink-700">Aucune séance programmée pour cette classe.</p>
             ) : (
               <>
                 <div className="mt-3 grid grid-cols-7 gap-1 text-center text-[11px] font-medium uppercase tracking-wide text-ink-400">
@@ -166,7 +158,7 @@ export function ParentAttendancePage() {
                     ) : (
                       <div
                         key={i}
-                        title={`${cell.entry.startTime}–${cell.entry.endTime} · ${DISPLAY_LABELS[cell.entry.display]}`}
+                        title={`${cell.entry.startTime}–${cell.entry.endTime} · ${ATTENDANCE_DISPLAY_LABELS[cell.entry.display]}`}
                         className={clsx(
                           "flex h-9 items-center justify-center rounded-sm text-xs font-medium",
                           DISPLAY_STYLES[cell.entry.display]
@@ -180,23 +172,23 @@ export function ParentAttendancePage() {
 
                 <div className="mt-4 flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-ink-500">
                   <span className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-success-600" /> Present ({stats.present})
+                    <span className="h-2.5 w-2.5 rounded-full bg-success-600" /> Présent ({stats.present})
                   </span>
                   <span className="flex items-center gap-1.5">
                     <span className="h-2.5 w-2.5 rounded-full bg-danger-600" /> Absent ({stats.absent})
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-warning-600" /> Excused ({stats.excused})
+                    <span className="h-2.5 w-2.5 rounded-full bg-warning-600" /> Excusé ({stats.excused})
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full border-2 border-dashed border-border-strong" /> Not marked (
+                    <span className="h-2.5 w-2.5 rounded-full border-2 border-dashed border-border-strong" /> Non marqué (
                     {stats.unmarked})
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-border-strong" /> Upcoming ({stats.upcoming})
+                    <span className="h-2.5 w-2.5 rounded-full bg-border-strong" /> À venir ({stats.upcoming})
                   </span>
                   <span className="flex items-center gap-1.5">
-                    <span className="h-2.5 w-2.5 rounded-full bg-accent-600" /> Today
+                    <span className="h-2.5 w-2.5 rounded-full bg-accent-600" /> Aujourd'hui
                   </span>
                 </div>
               </>

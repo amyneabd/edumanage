@@ -3,7 +3,7 @@ import { fetchChildLedger } from "../../api/parent";
 import { Card } from "../../components/Card";
 import { PaymentBadge } from "../../components/Badge";
 import { EmptyState, Spinner } from "../../components/Feedback";
-import { formatPeriodLabel } from "../../lib/period";
+import { formatPeriodLabel, formatDate } from "../../lib/period";
 import { formatCurrency } from "../../lib/currency";
 import { useSelectedChild } from "./useSelectedChild";
 import { ChildSwitcher } from "./ChildSwitcher";
@@ -23,20 +23,20 @@ export function ParentLedgerPage() {
 
   return (
     <div className="mx-auto max-w-2xl">
-      <h1 className="text-2xl font-semibold text-ink-900">Ledger</h1>
+      <h1 className="text-2xl font-semibold text-ink-900">Registre</h1>
       <div className="mt-4">
         <ChildSwitcher />
       </div>
 
       {!pupilId ? (
         <Card className="mt-6 p-5">
-          <EmptyState title="No linked children yet" description="Add a child using their Parent Code to get started." />
+          <EmptyState title="Aucun enfant associé pour le moment" description="Ajoutez un enfant à l'aide de son code parent pour commencer." />
         </Card>
       ) : isLoading || !ledger ? (
         <Spinner />
       ) : (
         <>
-          <p className="mt-4 text-sm text-ink-500">Full attendance and payment history, period by period.</p>
+          <p className="mt-4 text-sm text-ink-500">Historique complet des présences et paiements, période par période.</p>
 
           <div
             className={
@@ -49,32 +49,32 @@ export function ParentLedgerPage() {
             }
           >
             {balance > 0
-              ? `Owes ${formatCurrency(balance)} overall`
+              ? `Doit ${formatCurrency(balance)} au total`
               : balance < 0
-                ? `${formatCurrency(Math.abs(balance))} credit (paid in advance)` +
+                ? `${formatCurrency(Math.abs(balance))} de crédit (payé d'avance)` +
                   (sessionsInAdvance > 0
-                    ? ` — about ${sessionsInAdvance} session${sessionsInAdvance === 1 ? "" : "s"} ahead`
+                    ? ` — environ ${sessionsInAdvance} séance${sessionsInAdvance === 1 ? "" : "s"} d'avance`
                     : "")
-                : "All settled"}
+                : "Tout est réglé"}
           </div>
 
           <Card className="mt-4 p-5">
-            <h2 className="text-sm font-medium text-ink-700">History</h2>
+            <h2 className="text-sm font-medium text-ink-700">Historique</h2>
             {ledger.rows.length === 0 ? (
               <div className="mt-3">
-                <EmptyState title="No ledger records yet" description="The teacher hasn't recorded any attendance or payments yet." />
+                <EmptyState title="Aucun enregistrement dans le registre pour le moment" description="L'enseignant n'a encore enregistré aucune présence ni aucun paiement." />
               </div>
             ) : (
               <div className="overflow-x-auto">
                 <table className="mt-3 w-full text-sm">
                   <thead>
                     <tr className="text-left text-xs uppercase tracking-wide text-ink-400">
-                      <th scope="col" className="pb-1.5 font-medium">Period</th>
-                      <th scope="col" className="pb-1.5 font-medium">Present</th>
+                      <th scope="col" className="pb-1.5 font-medium">Période</th>
+                      <th scope="col" className="pb-1.5 font-medium">Présent</th>
                       <th scope="col" className="pb-1.5 font-medium">Absent</th>
-                      <th scope="col" className="pb-1.5 font-medium">Status</th>
-                      <th scope="col" className="pb-1.5 font-medium">Paid / Due</th>
-                      <th scope="col" className="pb-1.5 font-medium">Due date</th>
+                      <th scope="col" className="pb-1.5 font-medium">Statut</th>
+                      <th scope="col" className="pb-1.5 font-medium">Payé / Dû</th>
+                      <th scope="col" className="pb-1.5 font-medium">Date d'échéance</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-border">
@@ -90,7 +90,7 @@ export function ParentLedgerPage() {
                           {formatCurrency(row.amountPaid)} / {formatCurrency(row.amountDue)}
                         </td>
                         <td className="py-2 text-ink-500">
-                          {row.dueDate ? new Date(row.dueDate).toLocaleDateString() : "—"}
+                          {row.dueDate ? formatDate(row.dueDate) : "—"}
                         </td>
                       </tr>
                     ))}
