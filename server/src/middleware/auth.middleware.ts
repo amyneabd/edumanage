@@ -1,7 +1,7 @@
 import type { NextFunction, Request, Response } from "express";
-import { verifyToken } from "../utils/jwt.js";
+import { supabaseAuth } from "../utils/supabaseAuth.js";
 import { prisma } from "../utils/prisma.js";
-import { env } from "../utils/env.js";
+import { getAuthCookies, setAuthCookies, clearAuthCookies } from "../utils/authCookies.js";
 import type { Role, UserStatus } from "@prisma/client";
 
 export interface AuthedUser {
@@ -10,7 +10,6 @@ export interface AuthedUser {
   status: UserStatus;
   name: string;
   email: string;
-  emailVerifiedAt: Date | null;
 }
 
 declare module "express-serve-static-core" {
@@ -19,32 +18,54 @@ declare module "express-serve-static-core" {
   }
 }
 
+async function loadAuthedUser(supabaseUserId: string): Promise<AuthedUser | null> {
+  const user = await prisma.user.findUnique({ where: { supabaseId: supabaseUserId } });
+  if (!user) return null;
+  return { id: user.id, role: user.role, status: user.status, name: user.name, email: user.email };
+}
+
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
-  const token = req.cookies?.token;
-  if (!token) {
+  const { accessToken, refreshToken } = getAuthCookies(req);
+  if (!accessToken) {
     res.status(401).json({ error: "Non authentifié" });
     return;
   }
 
-  try {
-    const payload = verifyToken(token);
-    const user = await prisma.user.findUnique({ where: { id: payload.userId } });
-    if (!user) {
+  const { data, error } = await supabaseAuth.auth.getUser(accessToken);
+  if (!error && data.user) {
+    const authedUser = await loadAuthedUser(data.user.id);
+    if (!authedUser) {
       res.status(401).json({ error: "Non authentifié" });
       return;
     }
-    req.user = {
-      id: user.id,
-      role: user.role,
-      status: user.status,
-      name: user.name,
-      email: user.email,
-      emailVerifiedAt: user.emailVerifiedAt,
-    };
+    req.user = authedUser;
     next();
-  } catch {
-    res.status(401).json({ error: "Session invalide ou expirée" });
+    return;
   }
+
+  if (!refreshToken) {
+    res.status(401).json({ error: "Session invalide ou expirée" });
+    return;
+  }
+
+  const { data: refreshed, error: refreshError } = await supabaseAuth.auth.refreshSession({
+    refresh_token: refreshToken,
+  });
+  if (refreshError || !refreshed.session) {
+    clearAuthCookies(res);
+    res.status(401).json({ error: "Session invalide ou expirée" });
+    return;
+  }
+
+  const authedUser = await loadAuthedUser(refreshed.session.user.id);
+  if (!authedUser) {
+    res.status(401).json({ error: "Non authentifié" });
+    return;
+  }
+
+  setAuthCookies(res, refreshed.session);
+  req.user = authedUser;
+  next();
 }
 
 export function requireRole(...roles: Role[]) {
@@ -60,18 +81,6 @@ export function requireRole(...roles: Role[]) {
 export function requireActive(req: Request, res: Response, next: NextFunction) {
   if (!req.user || req.user.status !== "ACTIVE") {
     res.status(403).json({ error: "Le compte n'est pas actif", status: req.user?.status });
-    return;
-  }
-  next();
-}
-
-export function requireEmailVerified(req: Request, res: Response, next: NextFunction) {
-  if (!env.requireEmailVerification) {
-    next();
-    return;
-  }
-  if (!req.user || !req.user.emailVerifiedAt) {
-    res.status(403).json({ error: "L'adresse e-mail n'est pas vérifiée" });
     return;
   }
   next();
