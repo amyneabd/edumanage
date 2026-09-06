@@ -76,8 +76,8 @@ export async function syncPaymentDueNotifications(teacherId: string) {
     await createNotification({
       teacherId,
       type: "PAYMENT_DUE",
-      title: overdue ? "Payment overdue" : "Payment due today",
-      body: `${record.pupil.user.name}'s payment for ${record.period} is ${overdue ? "overdue" : "due today"}.`,
+      title: overdue ? "Paiement en retard" : "Paiement dû aujourd'hui",
+      body: `${record.pupil.user.name}'s payment for ${record.period} is ${overdue ? "en retard" : "dû aujourd'hui"}.`,
       link: "/teacher/ledger",
       dedupeKey: `payment-due:${record.pupilId}:${record.period}`,
     });
@@ -100,8 +100,8 @@ export async function syncMonthlyRecapNotifications(teacherId: string) {
   await createNotification({
     teacherId,
     type: "MONTHLY_RECAP",
-    title: "Monthly recap ready",
-    body: `You achieved ${achieved} of ${goals.length} goals in ${finishedPeriod}.`,
+    title: "Récapitulatif mensuel disponible",
+    body: `Vous avez atteint ${achieved} objectif(s) sur ${goals.length} pour ${finishedPeriod}.`,
     link: `/teacher/overview?period=${finishedPeriod}`,
     dedupeKey: `monthly-recap:${finishedPeriod}`,
   });
@@ -155,8 +155,8 @@ async function syncPaymentDueNotificationsForParent(parentId: string) {
     await createNotification({
       parentId,
       type: "PAYMENT_DUE",
-      title: overdue ? "Payment overdue" : "Payment due today",
-      body: `${record.pupil.user.name}'s payment for ${record.period} is ${overdue ? "overdue" : "due today"}.`,
+      title: overdue ? "Paiement en retard" : "Paiement dû aujourd'hui",
+      body: `${record.pupil.user.name}'s payment for ${record.period} is ${overdue ? "en retard" : "dû aujourd'hui"}.`,
       link: "/parent/payments",
       dedupeKey: `payment-due:${record.pupilId}:${record.period}`,
     });
@@ -184,8 +184,8 @@ async function syncSubmissionMissingNotificationsForParent(parentId: string) {
       await createNotification({
         parentId,
         type: "SUBMISSION_MISSING",
-        title: "Missing submission",
-        body: `${pupil.user.name} hasn't submitted "${exam.content?.slice(0, 60) ?? "an exam"}" yet.`,
+        title: "Soumission manquante",
+        body: `${pupil.user.name} hasn't submitted "${exam.content?.slice(0, 60) ?? "un examen"}" yet.`,
         link: "/parent/feed",
         dedupeKey: `submission-missing:${pupilId}:${exam.id}`,
       });

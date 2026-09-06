@@ -44,7 +44,7 @@ export function getNextSession(
 /** Builds the same home-dashboard snapshot used by the pupil's own Home page. */
 export async function getHomeSnapshot(pupilId: string) {
   const profile = await getPupilProfileWithClass(pupilId);
-  if (!profile?.class) throw new PupilError("Not yet assigned to a class.", 404);
+  if (!profile?.class) throw new PupilError("Pas encore affecté à une classe.", 404);
 
   const period = currentPeriod();
 

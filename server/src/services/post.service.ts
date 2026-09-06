@@ -39,7 +39,7 @@ export function listPostsForTeacher(teacherId: string, take = 30) {
 
 async function getOwnedPost(postId: string, teacherId: string) {
   const post = await prisma.post.findUnique({ where: { id: postId }, include: { class: true } });
-  if (!post || post.class.teacherId !== teacherId) throw new PostError("Post not found.", 404);
+  if (!post || post.class.teacherId !== teacherId) throw new PostError("Publication introuvable.", 404);
   return post;
 }
 
@@ -103,12 +103,12 @@ export async function createPost(input: {
     where: { classId: input.classId, user: { status: "ACTIVE" } },
     include: { user: { select: { name: true } } },
   });
-  const kind = input.type === "EXAM" ? "a new exam" : input.type === "FILE" ? "a new file" : "a new post";
+  const kind = input.type === "EXAM" ? "un nouvel examen" : input.type === "FILE" ? "un nouveau fichier" : "une nouvelle publication";
   for (const pupil of pupils) {
     await notifyParentsOfPupil(pupil.userId, {
       type: "POST_PUBLISHED",
-      title: "New class post",
-      body: `${pupil.user.name}'s teacher shared ${kind}${input.content ? `: "${input.content.slice(0, 60)}"` : "."}`,
+      title: "Nouvelle publication",
+      body: `${pupil.user.name}'s teacher a partagé ${kind}${input.content ? `: "${input.content.slice(0, 60)}"` : "."}`,
       link: "/parent/feed",
       dedupeKey: `post-published:${pupil.userId}:${post.id}`,
     });
@@ -124,7 +124,7 @@ export async function submitToExam(input: {
   fileName: string;
 }) {
   const post = await prisma.post.findUnique({ where: { id: input.postId }, include: { class: true } });
-  if (!post || post.type !== "EXAM") throw new PostError("Exam post not found.", 404);
+  if (!post || post.type !== "EXAM") throw new PostError("Examen introuvable.", 404);
 
   const isResubmission = await prisma.postSubmission.findUnique({
     where: { postId_pupilId: { postId: input.postId, pupilId: input.pupilId } },
@@ -157,9 +157,9 @@ export async function submitToExam(input: {
   await createNotification({
     teacherId: post.class.teacherId,
     type: "EXAM_SUBMISSION",
-    title: isResubmission ? "Exam resubmitted" : "Exam submitted",
-    body: `${pupil?.user.name ?? "A pupil"} ${isResubmission ? "resubmitted" : "submitted"} "${
-      post.content?.slice(0, 60) ?? "an exam"
+    title: isResubmission ? "Examen re-soumis" : "Examen soumis",
+    body: `${pupil?.user.name ?? "Un élève"} ${isResubmission ? "re-soumis" : "soumis"} "${
+      post.content?.slice(0, 60) ?? "un examen"
     }".`,
     link: "/teacher/feed",
   });
@@ -177,16 +177,16 @@ export async function gradeSubmission(
     include: { post: { include: { class: true } }, pupil: { include: { user: true } } },
   });
   if (!submission || submission.post.class.teacherId !== teacherId) {
-    throw new PostError("Submission not found.", 404);
+    throw new PostError("Soumission introuvable.", 404);
   }
-  if (submission.post.type !== "EXAM") throw new PostError("Only exam submissions can be graded.", 400);
+  if (submission.post.type !== "EXAM") throw new PostError("Seules les soumissions d'examen peuvent être notées.", 400);
 
   if (input.grade !== null) {
     if (Number.isNaN(input.grade) || input.grade < 0) {
-      throw new PostError("Grade must be a non-negative number.", 400);
+      throw new PostError("La note doit être un nombre positif ou nul.", 400);
     }
     if (submission.post.maxGrade !== null && input.grade > submission.post.maxGrade) {
-      throw new PostError(`Grade cannot exceed the maximum of ${submission.post.maxGrade}.`, 400);
+      throw new PostError(`La note ne peut pas dépasser le maximum de ${submission.post.maxGrade}.`, 400);
     }
   }
 
@@ -202,7 +202,7 @@ export async function gradeSubmission(
 
 export async function getGradebook(teacherId: string, classId: string) {
   const klass = await prisma.class.findFirst({ where: { id: classId, teacherId } });
-  if (!klass) throw new PostError("Class not found.", 404);
+  if (!klass) throw new PostError("Classe introuvable.", 404);
 
   const [exams, pupils] = await Promise.all([
     prisma.post.findMany({

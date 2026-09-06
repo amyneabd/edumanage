@@ -64,9 +64,9 @@ async function sendMail(params: {
 export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<{ delivered: boolean }> {
   return sendMail({
     to,
-    subject: "Reset your Bachandi password",
-    text: `We received a request to reset your Bachandi password. This link expires in 1 hour:\n\n${resetUrl}\n\nIf you didn't request this, you can safely ignore this email.`,
-    html: `<p>We received a request to reset your Bachandi password. This link expires in 1 hour:</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>If you didn't request this, you can safely ignore this email.</p>`,
+    subject: "Réinitialisez votre mot de passe Bachandi",
+    text: `Nous avons reçu une demande de réinitialisation de votre mot de passe Bachandi. Ce lien expire dans 1 heure :\n\n${resetUrl}\n\nSi vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité.`,
+    html: `<p>Nous avons reçu une demande de réinitialisation de votre mot de passe Bachandi. Ce lien expire dans 1 heure :</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité.</p>`,
     logLabel: `Password reset link for ${to}:\n  ${resetUrl}`,
   });
 }
@@ -78,9 +78,9 @@ export async function sendPasswordResetEmail(to: string, resetUrl: string): Prom
 export async function sendVerificationEmail(to: string, verifyUrl: string): Promise<{ delivered: boolean }> {
   return sendMail({
     to,
-    subject: "Verify your Bachandi email address",
-    text: `Welcome to Bachandi! Please verify your email address. This link expires in 24 hours:\n\n${verifyUrl}\n\nIf you didn't create this account, you can safely ignore this email.`,
-    html: `<p>Welcome to Bachandi! Please verify your email address. This link expires in 24 hours:</p><p><a href="${verifyUrl}">${verifyUrl}</a></p><p>If you didn't create this account, you can safely ignore this email.</p>`,
+    subject: "Vérifiez votre adresse e-mail Bachandi",
+    text: `Bienvenue sur Bachandi ! Veuillez vérifier votre adresse e-mail. Ce lien expire dans 24 heures :\n\n${verifyUrl}\n\nSi vous n'êtes pas à l'origine de la création de ce compte, vous pouvez ignorer cet e-mail en toute sécurité.`,
+    html: `<p>Bienvenue sur Bachandi ! Veuillez vérifier votre adresse e-mail. Ce lien expire dans 24 heures :</p><p><a href="${verifyUrl}">${verifyUrl}</a></p><p>Si vous n'êtes pas à l'origine de la création de ce compte, vous pouvez ignorer cet e-mail en toute sécurité.</p>`,
     logLabel: `Verification link for ${to}:\n  ${verifyUrl}`,
   });
 }
@@ -101,8 +101,8 @@ export async function sendParentAlertEmail(
   return sendMail({
     to,
     subject: `Bachandi: ${subject}`,
-    text: `${body}${fullLink ? `\n\nView details: ${fullLink}` : ""}`,
-    html: `<p>${body}</p>${fullLink ? `<p><a href="${fullLink}">View details</a></p>` : ""}`,
+    text: `${body}${fullLink ? `\n\nVoir les détails : ${fullLink}` : ""}`,
+    html: `<p>${body}</p>${fullLink ? `<p><a href="${fullLink}">Voir les détails</a></p>` : ""}`,
     logLabel: `Alert for ${to}: ${subject} — ${body}${fullLink ? ` (${fullLink})` : ""}`,
   });
 }
