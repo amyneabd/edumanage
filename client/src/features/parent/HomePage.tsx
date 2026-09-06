@@ -96,7 +96,7 @@ export function ParentHomePage() {
                   value={PAYMENT_STATUS_LABELS[payment.status]}
                   hint={
                     payment.status === "PAID"
-                      ? `${formatCurrency(payment.amountPaid)} settled`
+                      ? `${formatCurrency(payment.amountPaid)} réglé`
                       : `${formatCurrency(payment.amountPaid)} / ${formatCurrency(payment.amountDue)}`
                   }
                   icon={<Wallet className="h-[18px] w-[18px]" strokeWidth={1.8} />}
