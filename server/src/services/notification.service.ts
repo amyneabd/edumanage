@@ -77,7 +77,7 @@ export async function syncPaymentDueNotifications(teacherId: string) {
       teacherId,
       type: "PAYMENT_DUE",
       title: overdue ? "Paiement en retard" : "Paiement dû aujourd'hui",
-      body: `${record.pupil.user.name}'s payment for ${record.period} is ${overdue ? "en retard" : "dû aujourd'hui"}.`,
+      body: `Le paiement de ${record.pupil.user.name} pour ${record.period} est ${overdue ? "en retard" : "dû aujourd'hui"}.`,
       link: "/teacher/ledger",
       dedupeKey: `payment-due:${record.pupilId}:${record.period}`,
     });
@@ -156,7 +156,7 @@ async function syncPaymentDueNotificationsForParent(parentId: string) {
       parentId,
       type: "PAYMENT_DUE",
       title: overdue ? "Paiement en retard" : "Paiement dû aujourd'hui",
-      body: `${record.pupil.user.name}'s payment for ${record.period} is ${overdue ? "en retard" : "dû aujourd'hui"}.`,
+      body: `Le paiement de ${record.pupil.user.name} pour ${record.period} est ${overdue ? "en retard" : "dû aujourd'hui"}.`,
       link: "/parent/payments",
       dedupeKey: `payment-due:${record.pupilId}:${record.period}`,
     });
@@ -185,7 +185,7 @@ async function syncSubmissionMissingNotificationsForParent(parentId: string) {
         parentId,
         type: "SUBMISSION_MISSING",
         title: "Soumission manquante",
-        body: `${pupil.user.name} hasn't submitted "${exam.content?.slice(0, 60) ?? "un examen"}" yet.`,
+        body: `${pupil.user.name} n'a pas encore soumis "${exam.content?.slice(0, 60) ?? "un examen"}".`,
         link: "/parent/feed",
         dedupeKey: `submission-missing:${pupilId}:${exam.id}`,
       });

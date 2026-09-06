@@ -108,7 +108,7 @@ export async function createPost(input: {
     await notifyParentsOfPupil(pupil.userId, {
       type: "POST_PUBLISHED",
       title: "Nouvelle publication",
-      body: `${pupil.user.name}'s teacher a partagé ${kind}${input.content ? `: "${input.content.slice(0, 60)}"` : "."}`,
+      body: `L'enseignant de ${pupil.user.name} a partagé ${kind}${input.content ? `: "${input.content.slice(0, 60)}"` : "."}`,
       link: "/parent/feed",
       dedupeKey: `post-published:${pupil.userId}:${post.id}`,
     });
@@ -158,7 +158,7 @@ export async function submitToExam(input: {
     teacherId: post.class.teacherId,
     type: "EXAM_SUBMISSION",
     title: isResubmission ? "Examen re-soumis" : "Examen soumis",
-    body: `${pupil?.user.name ?? "Un élève"} ${isResubmission ? "re-soumis" : "soumis"} "${
+    body: `${pupil?.user.name ?? "Un élève"} a ${isResubmission ? "re-soumis" : "soumis"} "${
       post.content?.slice(0, 60) ?? "un examen"
     }".`,
     link: "/teacher/feed",
