@@ -24,7 +24,7 @@ function handleParentError(err: unknown, res: Response) {
 export async function requestLinkHandler(req: Request, res: Response) {
   const { parentCode } = req.body ?? {};
   if (typeof parentCode !== "string" || parentCode.trim().length < 4) {
-    res.status(400).json({ error: "A valid Parent Code is required." });
+    res.status(400).json({ error: "Un code parent valide est requis." });
     return;
   }
   try {

@@ -76,7 +76,7 @@ export async function getTeacherDetail(teacherId: string) {
     where: { id: teacherId, role: "TEACHER" },
     include: { teacherProfile: true },
   });
-  if (!user || !user.teacherProfile) throw new AdminError("Teacher not found.", 404);
+  if (!user || !user.teacherProfile) throw new AdminError("Enseignant introuvable.", 404);
 
   const period = currentPeriod();
 

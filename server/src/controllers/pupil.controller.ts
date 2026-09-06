@@ -57,7 +57,7 @@ export async function paymentHistoryHandler(req: Request, res: Response) {
 export async function schedule(req: Request, res: Response) {
   const profile = await getPupilProfileWithClass(req.user!.id);
   if (!profile?.class) {
-    res.status(404).json({ error: "Not yet assigned to a class." });
+    res.status(404).json({ error: "Pas encore assigné à une classe." });
     return;
   }
   const view = await getClassScheduleView(profile.classId!, profile.class.teacher.userId);
@@ -67,7 +67,7 @@ export async function schedule(req: Request, res: Response) {
 export async function posts(req: Request, res: Response) {
   const profile = await getPupilProfileWithClass(req.user!.id);
   if (!profile?.classId) {
-    res.status(404).json({ error: "Not yet assigned to a class." });
+    res.status(404).json({ error: "Pas encore assigné à une classe." });
     return;
   }
   const items = await listPostsForClass(profile.classId);
@@ -87,7 +87,7 @@ export async function gradesHandler(req: Request, res: Response) {
 export async function submitExam(req: Request, res: Response) {
   const file = req.file;
   if (!file) {
-    res.status(400).json({ error: "A file is required for submission." });
+    res.status(400).json({ error: "Un fichier est requis pour la soumission." });
     return;
   }
   try {
@@ -144,7 +144,7 @@ const createSwapRequestSchema = z.object({
 export async function createSwapRequestHandler(req: Request, res: Response) {
   const parsed = createSwapRequestSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid request body." });
+    res.status(400).json({ error: "Corps de requête invalide." });
     return;
   }
   try {

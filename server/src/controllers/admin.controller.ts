@@ -20,7 +20,7 @@ export async function listPendingTeachers(_req: Request, res: Response) {
 export async function approveTeacher(req: Request, res: Response) {
   const user = await prisma.user.findFirst({ where: { id: req.params.id as string, role: "TEACHER" } });
   if (!user) {
-    res.status(404).json({ error: "Teacher not found." });
+    res.status(404).json({ error: "Enseignant introuvable." });
     return;
   }
   const updated = await prisma.user.update({ where: { id: user.id }, data: { status: "ACTIVE" } });
@@ -30,7 +30,7 @@ export async function approveTeacher(req: Request, res: Response) {
 export async function rejectTeacher(req: Request, res: Response) {
   const user = await prisma.user.findFirst({ where: { id: req.params.id as string, role: "TEACHER" } });
   if (!user) {
-    res.status(404).json({ error: "Teacher not found." });
+    res.status(404).json({ error: "Enseignant introuvable." });
     return;
   }
   const updated = await prisma.user.update({ where: { id: user.id }, data: { status: "REJECTED" } });

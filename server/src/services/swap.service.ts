@@ -25,8 +25,8 @@ async function getPupilWithClass(pupilId: string) {
     where: { userId: pupilId },
     include: { user: { select: { id: true, name: true } }, class: { include: { scheduleSlots: true } } },
   });
-  if (!pupil) throw new SwapError("Pupil profile not found.", 404);
-  if (!pupil.classId || !pupil.class) throw new SwapError("Pupil is not assigned to a class.", 400);
+  if (!pupil) throw new SwapError("Profil élève introuvable.", 404);
+  if (!pupil.classId || !pupil.class) throw new SwapError("L'élève n'est assigné à aucune classe.", 400);
   return pupil;
 }
 
@@ -55,33 +55,33 @@ export async function createSwapRequest(
   const originDate = parseDateKey(input.originDate);
   const targetDate = parseDateKey(input.targetDate);
   if (Number.isNaN(originDate.getTime()) || Number.isNaN(targetDate.getTime())) {
-    throw new SwapError("Invalid date.", 400);
+    throw new SwapError("Date invalide.", 400);
   }
 
   const today = startOfToday();
-  if (originDate < today) throw new SwapError("Origin date must not be in the past.", 400);
-  if (targetDate < today) throw new SwapError("Target date must not be in the past.", 400);
+  if (originDate < today) throw new SwapError("La date d'origine ne doit pas être dans le passé.", 400);
+  if (targetDate < today) throw new SwapError("La date cible ne doit pas être dans le passé.", 400);
 
   const existingPending = await prisma.swapRequest.findFirst({
     where: { pupilId, originDate, status: "PENDING" },
   });
   if (existingPending) {
-    throw new SwapError("You already have a pending swap request for that session.", 409);
+    throw new SwapError("Vous avez déjà une demande d'échange en attente pour cette séance.", 409);
   }
 
   const originIsReal = await isRealSession(pupil.classId!, originDate);
-  if (!originIsReal) throw new SwapError("Origin date is not a scheduled session of your class.", 400);
+  if (!originIsReal) throw new SwapError("La date d'origine ne correspond pas à une séance programmée de votre classe.", 400);
 
   const targetClass = await prisma.class.findUnique({ where: { id: input.targetClassId } });
   if (!targetClass || targetClass.teacherId !== pupil.teacherId) {
-    throw new SwapError("Target class not found.", 404);
+    throw new SwapError("Classe cible introuvable.", 404);
   }
   if (targetClass.id === pupil.classId) {
-    throw new SwapError("Target class must be different from your own class.", 400);
+    throw new SwapError("La classe cible doit être différente de votre propre classe.", 400);
   }
 
   const targetIsReal = await isRealSession(targetClass.id, targetDate);
-  if (!targetIsReal) throw new SwapError("Target date is not a scheduled session of the target class.", 400);
+  if (!targetIsReal) throw new SwapError("La date cible ne correspond pas à une séance programmée de la classe cible.", 400);
 
   const request = await prisma.swapRequest.create({
     data: {
@@ -116,9 +116,9 @@ export async function listOwnSwapRequests(pupilId: string) {
 
 export async function cancelSwapRequest(pupilId: string, id: string) {
   const request = await prisma.swapRequest.findFirst({ where: { id, pupilId } });
-  if (!request) throw new SwapError("Swap request not found.", 404);
+  if (!request) throw new SwapError("Demande d'échange introuvable.", 404);
   if (request.status !== "PENDING") {
-    throw new SwapError("Only pending requests can be cancelled.", 400);
+    throw new SwapError("Seules les demandes en attente peuvent être annulées.", 400);
   }
   await prisma.swapRequest.delete({ where: { id } });
 }
@@ -139,9 +139,9 @@ export async function respondToSwapRequest(teacherId: string, id: string, status
     where: { id, OR: [{ originClass: { teacherId } }, { targetClass: { teacherId } }] },
     include: { originClass: true, targetClass: true },
   });
-  if (!request) throw new SwapError("Swap request not found.", 404);
+  if (!request) throw new SwapError("Demande d'échange introuvable.", 404);
   if (request.status !== "PENDING") {
-    throw new SwapError("This request has already been resolved.", 400);
+    throw new SwapError("Cette demande a déjà été traitée.", 400);
   }
 
   const updated = await prisma.swapRequest.update({ where: { id }, data: { status } });

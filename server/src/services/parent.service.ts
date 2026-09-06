@@ -25,17 +25,17 @@ export async function requestParentLink(parentId: string, parentCode: string) {
     where: { parentCode: parentCode.toUpperCase() },
     include: { user: true },
   });
-  if (!pupil) throw new ParentError("No pupil found with that Parent Code.", 404);
+  if (!pupil) throw new ParentError("Aucun élève trouvé avec ce code parent.", 404);
 
   const existing = await prisma.parentLink.findUnique({
     where: { parentId_pupilId: { parentId, pupilId: pupil.userId } },
   });
   if (existing) {
     if (existing.status === "PENDING") {
-      throw new ParentError("You already have a pending request for this pupil.", 409);
+      throw new ParentError("Vous avez déjà une demande en attente pour cet élève.", 409);
     }
     if (existing.status === "ACTIVE") {
-      throw new ParentError("This pupil is already linked to your account.", 409);
+      throw new ParentError("Cet élève est déjà lié à votre compte.", 409);
     }
   }
 
@@ -89,7 +89,7 @@ async function assertActiveLink(parentId: string, pupilId: string) {
     where: { parentId_pupilId: { parentId, pupilId } },
   });
   if (!link || link.status !== "ACTIVE") {
-    throw new ParentError("You don't have access to this pupil.", 403);
+    throw new ParentError("Vous n'avez pas accès à cet élève.", 403);
   }
 }
 
@@ -101,7 +101,7 @@ export async function getChildHome(parentId: string, pupilId: string) {
 export async function getChildSchedule(parentId: string, pupilId: string) {
   await assertActiveLink(parentId, pupilId);
   const profile = await getPupilProfileWithClass(pupilId);
-  if (!profile?.class) throw new ParentError("Pupil is not yet assigned to a class.", 404);
+  if (!profile?.class) throw new ParentError("L'élève n'est pas encore assigné à une classe.", 404);
   const view = await getClassScheduleView(profile.classId!, profile.class.teacher.userId);
   return { className: profile.class.name, ...view };
 }
@@ -129,7 +129,7 @@ export async function getChildGrades(parentId: string, pupilId: string) {
 export async function getChildPosts(parentId: string, pupilId: string) {
   await assertActiveLink(parentId, pupilId);
   const profile = await getPupilProfileWithClass(pupilId);
-  if (!profile?.classId) throw new ParentError("Pupil is not yet assigned to a class.", 404);
+  if (!profile?.classId) throw new ParentError("L'élève n'est pas encore assigné à une classe.", 404);
   const items = await listPostsForClass(profile.classId);
   return items.map((p) => ({
     ...p,
@@ -167,8 +167,8 @@ export function listAllParentRequests(teacherId: string) {
 
 export async function respondToParentLink(teacherId: string, linkId: string, approve: boolean) {
   const link = await prisma.parentLink.findFirst({ where: { id: linkId, teacherId } });
-  if (!link) throw new ParentError("Request not found.", 404);
-  if (link.status !== "PENDING") throw new ParentError("This request has already been resolved.", 400);
+  if (!link) throw new ParentError("Demande introuvable.", 404);
+  if (link.status !== "PENDING") throw new ParentError("Cette demande a déjà été traitée.", 400);
 
   return prisma.parentLink.update({
     where: { id: linkId },

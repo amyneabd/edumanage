@@ -69,7 +69,7 @@ function sendMailBestEffort(promise: Promise<{ delivered: boolean }>, context: s
 export async function register(req: Request, res: Response) {
   const parsed = registerSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input", details: parsed.error.flatten() });
+    res.status(400).json({ error: "Entrée invalide", details: parsed.error.flatten() });
     return;
   }
 
@@ -112,7 +112,7 @@ const loginSchema = z.object({
 export async function loginHandler(req: Request, res: Response) {
   const parsed = loginSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
 
@@ -135,14 +135,14 @@ export function logout(_req: Request, res: Response) {
   res.status(204).send();
 }
 
-const GENERIC_RESET_MESSAGE = "If that email exists, we've sent a link to reset your password.";
+const GENERIC_RESET_MESSAGE = "Si cet e-mail existe, nous avons envoyé un lien pour réinitialiser votre mot de passe.";
 
 const forgotPasswordSchema = z.object({ email: z.string().email() });
 
 export async function forgotPassword(req: Request, res: Response) {
   const parsed = forgotPasswordSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
 
@@ -174,7 +174,7 @@ const resetPasswordSchema = z.object({
 export async function resetPasswordHandler(req: Request, res: Response) {
   const parsed = resetPasswordSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
 
@@ -195,7 +195,7 @@ const verifyEmailSchema = z.object({ token: z.string().min(10) });
 export async function verifyEmailHandler(req: Request, res: Response) {
   const parsed = verifyEmailSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
 
@@ -213,7 +213,7 @@ export async function verifyEmailHandler(req: Request, res: Response) {
 
 export async function resendVerificationHandler(req: Request, res: Response) {
   if (!req.user) {
-    res.status(401).json({ error: "Not authenticated" });
+    res.status(401).json({ error: "Non authentifié" });
     return;
   }
 
@@ -222,12 +222,12 @@ export async function resendVerificationHandler(req: Request, res: Response) {
     const verifyUrl = `${env.clientOrigin}/verify-email?token=${result.token}`;
     sendMailBestEffort(sendVerificationEmail(result.email, verifyUrl), `verification email to ${result.email}`);
     if (!env.resend && !env.isProduction) {
-      res.json({ message: "Verification email sent.", devVerifyUrl: verifyUrl });
+      res.json({ message: "E-mail de vérification envoyé.", devVerifyUrl: verifyUrl });
       return;
     }
   }
 
-  res.json({ message: "Verification email sent." });
+  res.json({ message: "E-mail de vérification envoyé." });
 }
 
 const changePasswordSchema = z.object({
@@ -237,13 +237,13 @@ const changePasswordSchema = z.object({
 
 export async function changePasswordHandler(req: Request, res: Response) {
   if (!req.user) {
-    res.status(401).json({ error: "Not authenticated" });
+    res.status(401).json({ error: "Non authentifié" });
     return;
   }
 
   const parsed = changePasswordSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
 
@@ -261,7 +261,7 @@ export async function changePasswordHandler(req: Request, res: Response) {
 
 export async function me(req: Request, res: Response) {
   if (!req.user) {
-    res.status(401).json({ error: "Not authenticated" });
+    res.status(401).json({ error: "Non authentifié" });
     return;
   }
 

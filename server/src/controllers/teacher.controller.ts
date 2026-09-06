@@ -119,7 +119,7 @@ const createClassSchema = z.object({
 export async function createClassHandler(req: Request, res: Response) {
   const parsed = createClassSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
   const klass = await createClass(req.user!.id, parsed.data.name, parsed.data.type, parsed.data.monthlyFee);
@@ -131,7 +131,7 @@ const feeSchema = z.object({ monthlyFee: z.number().min(0).max(100000).nullable(
 export async function updateClassFeeHandler(req: Request, res: Response) {
   const parsed = feeSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
   try {
@@ -164,7 +164,7 @@ const scheduleSchema = z.object({
 export async function updateScheduleHandler(req: Request, res: Response) {
   const parsed = scheduleSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
   try {
@@ -202,7 +202,7 @@ const assignSchema = z.object({ classId: z.string().min(1) });
 export async function assignPupilRequest(req: Request, res: Response) {
   const parsed = assignSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
   try {
@@ -250,7 +250,7 @@ const paymentSchema = z.object({
 export async function updatePayment(req: Request, res: Response) {
   const parsed = paymentSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
   try {
@@ -282,12 +282,12 @@ export async function pupilLedgerHandler(req: Request, res: Response) {
 export async function listPosts(req: Request, res: Response) {
   const classId = req.query.classId;
   if (typeof classId !== "string") {
-    res.status(400).json({ error: "classId is required" });
+    res.status(400).json({ error: "classId est requis" });
     return;
   }
   const owns = await prisma.class.findFirst({ where: { id: classId, teacherId: req.user!.id } });
   if (!owns) {
-    res.status(404).json({ error: "Class not found." });
+    res.status(404).json({ error: "Classe introuvable." });
     return;
   }
   const posts = await listPostsForClass(classId);
@@ -297,12 +297,12 @@ export async function listPosts(req: Request, res: Response) {
 export async function createPostHandler(req: Request, res: Response) {
   const { classId, type, content, dueDate, maxGrade } = req.body;
   if (!classId || !type) {
-    res.status(400).json({ error: "classId and type are required" });
+    res.status(400).json({ error: "classId et type sont requis" });
     return;
   }
   const owns = await prisma.class.findFirst({ where: { id: classId, teacherId: req.user!.id } });
   if (!owns) {
-    res.status(404).json({ error: "Class not found." });
+    res.status(404).json({ error: "Classe introuvable." });
     return;
   }
 
@@ -365,7 +365,7 @@ const gradeSchema = z.object({
 export async function gradeSubmissionHandler(req: Request, res: Response) {
   const parsed = gradeSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
   try {
@@ -379,7 +379,7 @@ export async function gradeSubmissionHandler(req: Request, res: Response) {
 export async function gradebookHandler(req: Request, res: Response) {
   const classId = req.query.classId;
   if (typeof classId !== "string") {
-    res.status(400).json({ error: "classId is required" });
+    res.status(400).json({ error: "classId est requis" });
     return;
   }
   try {
@@ -435,7 +435,7 @@ export async function declineSwapRequestHandler(req: Request, res: Response) {
 export async function parentRequestsHandler(req: Request, res: Response) {
   const owns = await prisma.class.findFirst({ where: { id: req.params.id as string, teacherId: req.user!.id } });
   if (!owns) {
-    res.status(404).json({ error: "Class not found." });
+    res.status(404).json({ error: "Classe introuvable." });
     return;
   }
   const requests = await listParentRequestsForClass(req.user!.id, req.params.id as string);

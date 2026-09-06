@@ -96,7 +96,7 @@ export async function getLedgerSummary(teacherId: string, period?: string) {
 
 export async function getPupilPaymentHistory(teacherId: string, pupilId: string, take = 6) {
   const pupil = await prisma.pupilProfile.findFirst({ where: { userId: pupilId, teacherId }, include: { class: true } });
-  if (!pupil) throw new PaymentError("Pupil not found.", 404);
+  if (!pupil) throw new PaymentError("Élève introuvable.", 404);
 
   const records = await prisma.paymentRecord.findMany({
     where: { pupilId },
@@ -117,7 +117,7 @@ export async function getPupilPaymentHistory(teacherId: string, pupilId: string,
 
 export async function getOwnPaymentHistory(pupilId: string, take = 12) {
   const pupil = await prisma.pupilProfile.findUnique({ where: { userId: pupilId }, include: { class: true } });
-  if (!pupil) throw new PaymentError("Pupil profile not found.", 404);
+  if (!pupil) throw new PaymentError("Profil élève introuvable.", 404);
 
   const records = await prisma.paymentRecord.findMany({
     where: { pupilId },
@@ -148,7 +148,7 @@ export async function setPaymentStatus(
   }
 ) {
   const pupil = await prisma.pupilProfile.findFirst({ where: { userId: pupilId, teacherId }, include: { class: true } });
-  if (!pupil) throw new PaymentError("Pupil not found.", 404);
+  if (!pupil) throw new PaymentError("Élève introuvable.", 404);
 
   const period = input.period ?? currentPeriod();
   const existing = await prisma.paymentRecord.findUnique({ where: { pupilId_period: { pupilId, period } } });
@@ -259,7 +259,7 @@ export async function getPupilLedger(teacherId: string, pupilId: string) {
     where: { userId: pupilId, teacherId },
     include: { class: { include: { scheduleSlots: true } } },
   });
-  if (!pupil) throw new PaymentError("Pupil not found.", 404);
+  if (!pupil) throw new PaymentError("Élève introuvable.", 404);
 
   return buildPupilLedger(pupilId, pupil);
 }
@@ -270,7 +270,7 @@ export async function getOwnLedger(pupilId: string) {
     where: { userId: pupilId },
     include: { class: { include: { scheduleSlots: true } } },
   });
-  if (!pupil) throw new PaymentError("Pupil profile not found.", 404);
+  if (!pupil) throw new PaymentError("Profil élève introuvable.", 404);
 
   return buildPupilLedger(pupilId, pupil);
 }

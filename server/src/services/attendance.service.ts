@@ -17,7 +17,7 @@ async function getOwnedPupil(teacherId: string, pupilId: string) {
       class: { include: { scheduleSlots: true } },
     },
   });
-  if (!pupil) throw new AttendanceError("Pupil not found.", 404);
+  if (!pupil) throw new AttendanceError("Élève introuvable.", 404);
   return pupil;
 }
 
@@ -154,7 +154,7 @@ export async function getOwnAttendanceCalendar(pupilId: string, period?: string)
     where: { userId: pupilId },
     include: { class: { include: { scheduleSlots: true } } },
   });
-  if (!pupil) throw new AttendanceError("Pupil profile not found.", 404);
+  if (!pupil) throw new AttendanceError("Profil élève introuvable.", 404);
 
   const targetPeriod = period ?? currentPeriod();
 
@@ -202,11 +202,11 @@ export async function markAttendance(teacherId: string, pupilId: string, dateKey
   if (!pupil.classId || !pupil.class) throw new AttendanceError("Pupil is not assigned to a class.", 400);
 
   const date = parseDateKey(dateKey);
-  if (Number.isNaN(date.getTime())) throw new AttendanceError("Invalid date.", 400);
+  if (Number.isNaN(date.getTime())) throw new AttendanceError("Date invalide.", 400);
 
   const today = new Date();
   today.setHours(23, 59, 59, 999);
-  if (date > today) throw new AttendanceError("Cannot record attendance for a future date.", 400);
+  if (date > today) throw new AttendanceError("Impossible d'enregistrer une présence pour une date future.", 400);
 
   const isCurrentPeriod = dateKey.slice(0, 7) === currentPeriod();
   if (isCurrentPeriod) {
@@ -214,7 +214,7 @@ export async function markAttendance(teacherId: string, pupilId: string, dateKey
     if (!vacationSession) {
       const scheduledDays = new Set(pupil.class.scheduleSlots.map((s) => s.dayOfWeek));
       if (!scheduledDays.has(date.getDay())) {
-        throw new AttendanceError("This pupil's class has no session scheduled on that day.", 400);
+        throw new AttendanceError("La classe de cet élève n'a aucune séance programmée ce jour-là.", 400);
       }
     }
   }
@@ -241,7 +241,7 @@ export async function markAttendance(teacherId: string, pupilId: string, dateKey
 export async function clearAttendance(teacherId: string, pupilId: string, dateKey: string) {
   const pupil = await getOwnedPupil(teacherId, pupilId);
   const date = parseDateKey(dateKey);
-  if (Number.isNaN(date.getTime())) throw new AttendanceError("Invalid date.", 400);
+  if (Number.isNaN(date.getTime())) throw new AttendanceError("Date invalide.", 400);
 
   await prisma.attendanceRecord.deleteMany({ where: { pupilId, classId: pupil.classId ?? undefined, date } });
 }

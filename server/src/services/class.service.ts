@@ -33,7 +33,7 @@ export function createClass(teacherId: string, name: string, type: ClassType, mo
 
 export async function updateClassFee(teacherId: string, classId: string, monthlyFee: number | null) {
   const klass = await prisma.class.findFirst({ where: { id: classId, teacherId } });
-  if (!klass) throw new ClassError("Class not found.", 404);
+  if (!klass) throw new ClassError("Classe introuvable.", 404);
   return prisma.class.update({ where: { id: classId }, data: { monthlyFee } });
 }
 
@@ -53,7 +53,7 @@ export async function getClassDetail(teacherId: string, classId: string) {
       },
     },
   });
-  if (!klass) throw new ClassError("Class not found.", 404);
+  if (!klass) throw new ClassError("Classe introuvable.", 404);
   const { swapRequestsTarget, ...rest } = klass;
   return { ...rest, swapVisitors: swapRequestsTarget };
 }
@@ -64,7 +64,7 @@ export async function updateSchedule(
   slots: { dayOfWeek: number; startTime: string; endTime: string }[]
 ) {
   const klass = await prisma.class.findFirst({ where: { id: classId, teacherId } });
-  if (!klass) throw new ClassError("Class not found.", 404);
+  if (!klass) throw new ClassError("Classe introuvable.", 404);
 
   await prisma.$transaction([
     prisma.scheduleSlot.deleteMany({ where: { classId } }),
@@ -78,10 +78,10 @@ export async function updateSchedule(
 
 export async function removePupilFromClass(teacherId: string, classId: string, pupilId: string) {
   const klass = await prisma.class.findFirst({ where: { id: classId, teacherId } });
-  if (!klass) throw new ClassError("Class not found.", 404);
+  if (!klass) throw new ClassError("Classe introuvable.", 404);
 
   const pupil = await prisma.pupilProfile.findFirst({ where: { userId: pupilId, classId } });
-  if (!pupil) throw new ClassError("Pupil not found in this class.", 404);
+  if (!pupil) throw new ClassError("Élève introuvable dans cette classe.", 404);
 
   await prisma.pupilProfile.update({ where: { userId: pupilId }, data: { classId: null } });
 }
@@ -96,12 +96,12 @@ export function listPupilRequests(teacherId: string) {
 
 export async function assignPupilToClass(teacherId: string, pupilUserId: string, classId: string) {
   const klass = await prisma.class.findFirst({ where: { id: classId, teacherId } });
-  if (!klass) throw new ClassError("Class not found.", 404);
+  if (!klass) throw new ClassError("Classe introuvable.", 404);
 
   const pupil = await prisma.pupilProfile.findFirst({
     where: { userId: pupilUserId, teacherId },
   });
-  if (!pupil) throw new ClassError("Pupil request not found.", 404);
+  if (!pupil) throw new ClassError("Demande d'élève introuvable.", 404);
 
   await prisma.$transaction([
     prisma.pupilProfile.update({ where: { userId: pupilUserId }, data: { classId } }),
@@ -111,7 +111,7 @@ export async function assignPupilToClass(teacherId: string, pupilUserId: string,
 
 export async function rejectPupilRequest(teacherId: string, pupilUserId: string) {
   const pupil = await prisma.pupilProfile.findFirst({ where: { userId: pupilUserId, teacherId } });
-  if (!pupil) throw new ClassError("Pupil request not found.", 404);
+  if (!pupil) throw new ClassError("Demande d'élève introuvable.", 404);
 
   await prisma.user.update({ where: { id: pupilUserId }, data: { status: "REJECTED" } });
 }

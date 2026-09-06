@@ -24,7 +24,7 @@ export class AuthError extends Error {
 
 export async function registerTeacher(input: { email: string; password: string; name: string }) {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
-  if (existing) throw new AuthError("An account with this email already exists.", 409);
+  if (existing) throw new AuthError("Un compte avec cet e-mail existe déjà.", 409);
 
   const passwordHash = await hashPassword(input.password);
 
@@ -58,14 +58,14 @@ export async function registerPupil(input: {
   parentPhone: string;
 }) {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
-  if (existing) throw new AuthError("An account with this email already exists.", 409);
+  if (existing) throw new AuthError("Un compte avec cet e-mail existe déjà.", 409);
 
   const teacherProfile = await prisma.teacherProfile.findUnique({
     where: { teacherCode: input.teacherCode.toUpperCase() },
     include: { user: true },
   });
   if (!teacherProfile || teacherProfile.user.status !== "ACTIVE") {
-    throw new AuthError("No active teacher found with that Teacher ID.", 404);
+    throw new AuthError("Aucun enseignant actif trouvé avec cet identifiant enseignant.", 404);
   }
 
   const passwordHash = await hashPassword(input.password);
@@ -109,7 +109,7 @@ export async function registerPupil(input: {
 
 export async function registerParent(input: { email: string; password: string; name: string }) {
   const existing = await prisma.user.findUnique({ where: { email: input.email } });
-  if (existing) throw new AuthError("An account with this email already exists.", 409);
+  if (existing) throw new AuthError("Un compte avec cet e-mail existe déjà.", 409);
 
   const passwordHash = await hashPassword(input.password);
 
@@ -130,10 +130,10 @@ export async function registerParent(input: { email: string; password: string; n
 
 export async function login(email: string, password: string) {
   const user = await prisma.user.findUnique({ where: { email } });
-  if (!user) throw new AuthError("Invalid email or password.", 401);
+  if (!user) throw new AuthError("E-mail ou mot de passe invalide.", 401);
 
   const valid = await verifyPassword(password, user.passwordHash);
-  if (!valid) throw new AuthError("Invalid email or password.", 401);
+  if (!valid) throw new AuthError("E-mail ou mot de passe invalide.", 401);
 
   return user;
 }
@@ -163,7 +163,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
   const record = await prisma.passwordResetToken.findUnique({ where: { tokenHash } });
 
   if (!record || record.usedAt || record.expiresAt < new Date()) {
-    throw new AuthError("This reset link is invalid or has expired.", 400);
+    throw new AuthError("Ce lien de réinitialisation est invalide ou a expiré.", 400);
   }
 
   const passwordHash = await hashPassword(newPassword);
@@ -190,7 +190,7 @@ export async function verifyEmail(token: string): Promise<void> {
   const record = await prisma.emailVerificationToken.findUnique({ where: { tokenHash } });
 
   if (!record || record.usedAt || record.expiresAt < new Date()) {
-    throw new AuthError("This verification link is invalid or has expired.", 400);
+    throw new AuthError("Ce lien de vérification est invalide ou a expiré.", 400);
   }
 
   await prisma.$transaction([
@@ -210,10 +210,10 @@ export async function resendVerificationEmail(userId: string): Promise<{ token: 
 
 export async function changePassword(userId: string, currentPassword: string, newPassword: string): Promise<void> {
   const user = await prisma.user.findUnique({ where: { id: userId } });
-  if (!user) throw new AuthError("User not found.", 404);
+  if (!user) throw new AuthError("Utilisateur introuvable.", 404);
 
   const valid = await verifyPassword(currentPassword, user.passwordHash);
-  if (!valid) throw new AuthError("Current password is incorrect.", 400);
+  if (!valid) throw new AuthError("Le mot de passe actuel est incorrect.", 400);
 
   const passwordHash = await hashPassword(newPassword);
   await prisma.user.update({ where: { id: userId }, data: { passwordHash } });
