@@ -199,7 +199,7 @@ export async function getAttendanceOverviewForTeacher(teacherId: string) {
 
 export async function markAttendance(teacherId: string, pupilId: string, dateKey: string, status: "PRESENT" | "ABSENT") {
   const pupil = await getOwnedPupil(teacherId, pupilId);
-  if (!pupil.classId || !pupil.class) throw new AttendanceError("Pupil is not assigned to a class.", 400);
+  if (!pupil.classId || !pupil.class) throw new AttendanceError("L'élève n'est assigné à aucune classe.", 400);
 
   const date = parseDateKey(dateKey);
   if (Number.isNaN(date.getTime())) throw new AttendanceError("Date invalide.", 400);
