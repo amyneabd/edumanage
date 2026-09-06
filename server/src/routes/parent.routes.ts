@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireAuth, requireEmailVerified, requireRole } from "../middleware/auth.middleware.js";
+import { requireAuth, requireRole } from "../middleware/auth.middleware.js";
 import {
   childAttendanceHandler,
   childGradesHandler,
@@ -20,7 +20,7 @@ import {
 
 export const parentRouter = Router();
 
-parentRouter.use(requireAuth, requireRole("PARENT"), requireEmailVerified);
+parentRouter.use(requireAuth, requireRole("PARENT"));
 
 parentRouter.get("/children", childrenHandler);
 parentRouter.get("/links", linksHandler);

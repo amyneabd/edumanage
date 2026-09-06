@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireActive, requireAuth, requireEmailVerified, requireRole } from "../middleware/auth.middleware.js";
+import { requireActive, requireAuth, requireRole } from "../middleware/auth.middleware.js";
 import { upload } from "../middleware/upload.middleware.js";
 import {
   attendanceCalendarHandler,
@@ -17,7 +17,7 @@ import {
 
 export const pupilRouter = Router();
 
-pupilRouter.use(requireAuth, requireRole("PUPIL"), requireEmailVerified, requireActive);
+pupilRouter.use(requireAuth, requireRole("PUPIL"), requireActive);
 
 pupilRouter.get("/home", home);
 pupilRouter.get("/schedule", schedule);
