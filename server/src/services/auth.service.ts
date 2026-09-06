@@ -8,6 +8,13 @@ import type { ClassType, User } from "@prisma/client";
 const RESET_TOKEN_TTL_MS = 60 * 60 * 1000; // 1 hour
 const VERIFICATION_TOKEN_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+const CLASS_TYPE_LABELS_LOWER: Record<ClassType, string> = {
+  SCIENCE: "sciences",
+  MATH: "mathématiques",
+  INFO: "informatique",
+  ECO: "économie",
+};
+
 function hashResetToken(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");
 }
@@ -98,8 +105,8 @@ export async function registerPupil(input: {
   await createNotification({
     teacherId: teacherProfile.userId,
     type: "PUPIL_REQUEST",
-    title: "New pupil request",
-    body: `${user.name} requested to join your ${input.requestedType.toLowerCase()} classes.`,
+    title: "Nouvelle demande d'élève",
+    body: `${user.name} demande à rejoindre vos classes de ${CLASS_TYPE_LABELS_LOWER[input.requestedType]}.`,
     link: "/teacher/classes",
     dedupeKey: `pupil-request:${user.id}`,
   });

@@ -31,7 +31,7 @@ const startSchema = z.object({
 export async function startVacationHandler(req: Request, res: Response) {
   const parsed = startSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
   try {
@@ -69,7 +69,7 @@ const addSessionSchema = z.object({
 export async function addVacationSessionHandler(req: Request, res: Response) {
   const parsed = addSessionSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
   try {

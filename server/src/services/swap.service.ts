@@ -97,8 +97,8 @@ export async function createSwapRequest(
 
   await createNotification({
     type: "SWAP_REQUEST",
-    title: "New swap request",
-    body: `${pupil.user.name} requested to swap into ${targetClass.name} on ${input.targetDate}.`,
+    title: "Nouvelle demande d'échange",
+    body: `${pupil.user.name} a demandé un échange vers ${targetClass.name} le ${input.targetDate}.`,
     link: "/teacher/classes",
     teacherId: pupil.teacherId,
   });

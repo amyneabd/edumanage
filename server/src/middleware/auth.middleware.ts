@@ -22,7 +22,7 @@ declare module "express-serve-static-core" {
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const token = req.cookies?.token;
   if (!token) {
-    res.status(401).json({ error: "Not authenticated" });
+    res.status(401).json({ error: "Non authentifié" });
     return;
   }
 
@@ -30,7 +30,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     const payload = verifyToken(token);
     const user = await prisma.user.findUnique({ where: { id: payload.userId } });
     if (!user) {
-      res.status(401).json({ error: "Not authenticated" });
+      res.status(401).json({ error: "Non authentifié" });
       return;
     }
     req.user = {
@@ -43,14 +43,14 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
     };
     next();
   } catch {
-    res.status(401).json({ error: "Invalid or expired session" });
+    res.status(401).json({ error: "Session invalide ou expirée" });
   }
 }
 
 export function requireRole(...roles: Role[]) {
   return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || !roles.includes(req.user.role)) {
-      res.status(403).json({ error: "Forbidden" });
+      res.status(403).json({ error: "Accès interdit" });
       return;
     }
     next();
@@ -59,7 +59,7 @@ export function requireRole(...roles: Role[]) {
 
 export function requireActive(req: Request, res: Response, next: NextFunction) {
   if (!req.user || req.user.status !== "ACTIVE") {
-    res.status(403).json({ error: "Account is not active", status: req.user?.status });
+    res.status(403).json({ error: "Le compte n'est pas actif", status: req.user?.status });
     return;
   }
   next();
@@ -71,7 +71,7 @@ export function requireEmailVerified(req: Request, res: Response, next: NextFunc
     return;
   }
   if (!req.user || !req.user.emailVerifiedAt) {
-    res.status(403).json({ error: "Email address is not verified" });
+    res.status(403).json({ error: "L'adresse e-mail n'est pas vérifiée" });
     return;
   }
   next();

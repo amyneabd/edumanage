@@ -27,7 +27,7 @@ export function getActiveVacationPeriod(teacherId: string) {
 
 async function requireOwnedClass(teacherId: string, classId: string) {
   const klass = await prisma.class.findFirst({ where: { id: classId, teacherId } });
-  if (!klass) throw new VacationError("Class not found.", 404);
+  if (!klass) throw new VacationError("Classe introuvable.", 404);
   return klass;
 }
 
@@ -35,15 +35,15 @@ export async function startVacation(teacherId: string, startDateKey: string, end
   const startDate = parseDateOnly(startDateKey);
   const endDate = parseDateOnly(endDateKey);
   if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
-    throw new VacationError("Invalid date.", 400);
+    throw new VacationError("Date invalide.", 400);
   }
   if (endDate < startDate) {
-    throw new VacationError("End date must be on or after the start date.", 400);
+    throw new VacationError("La date de fin doit être postérieure ou égale à la date de début.", 400);
   }
 
   const existing = await getActiveVacationPeriod(teacherId);
   if (existing) {
-    throw new VacationError("A vacation period is already active. End it before starting a new one.", 400);
+    throw new VacationError("Une période de vacances est déjà active. Terminez-la avant d'en démarrer une nouvelle.", 400);
   }
 
   return prisma.vacationPeriod.create({
@@ -53,7 +53,7 @@ export async function startVacation(teacherId: string, startDateKey: string, end
 
 export async function endVacation(teacherId: string) {
   const active = await getActiveVacationPeriod(teacherId);
-  if (!active) throw new VacationError("No vacation period is currently active.", 400);
+  if (!active) throw new VacationError("Aucune période de vacances n'est actuellement active.", 400);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -87,12 +87,12 @@ export async function addVacationSession(
 ) {
   await requireOwnedClass(teacherId, classId);
   const active = await getActiveVacationPeriod(teacherId);
-  if (!active) throw new VacationError("No vacation period is currently active.", 400);
+  if (!active) throw new VacationError("Aucune période de vacances n'est actuellement active.", 400);
 
   const date = parseDateOnly(dateKey);
-  if (Number.isNaN(date.getTime())) throw new VacationError("Invalid date.", 400);
+  if (Number.isNaN(date.getTime())) throw new VacationError("Date invalide.", 400);
   if (date < active.startDate || date > active.endDate) {
-    throw new VacationError("Date falls outside the active vacation period.", 400);
+    throw new VacationError("La date se situe en dehors de la période de vacances active.", 400);
   }
 
   try {
@@ -101,7 +101,7 @@ export async function addVacationSession(
     });
   } catch (err) {
     if (err && typeof err === "object" && "code" in err && err.code === "P2002") {
-      throw new VacationError("This class already has an ad-hoc session on that date.", 409);
+      throw new VacationError("Cette classe a déjà une séance ponctuelle programmée à cette date.", 409);
     }
     throw err;
   }
@@ -110,7 +110,7 @@ export async function addVacationSession(
 export async function removeVacationSession(teacherId: string, classId: string, sessionId: string) {
   await requireOwnedClass(teacherId, classId);
   const session = await prisma.vacationSession.findFirst({ where: { id: sessionId, classId } });
-  if (!session) throw new VacationError("Vacation session not found.", 404);
+  if (!session) throw new VacationError("Séance de vacances introuvable.", 404);
   await prisma.vacationSession.delete({ where: { id: sessionId } });
 }
 

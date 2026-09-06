@@ -1,4 +1,4 @@
-const formatter = new Intl.NumberFormat("en-US", {
+const formatter = new Intl.NumberFormat("fr-FR", {
   maximumFractionDigits: 0,
 });
 

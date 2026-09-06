@@ -36,14 +36,14 @@ export async function createGoal(teacherId: string, title: string, targetCount?:
 
 async function getOwnedGoal(teacherId: string, goalId: string) {
   const goal = await prisma.goal.findFirst({ where: { id: goalId, teacherId } });
-  if (!goal) throw new GoalError("Goal not found.", 404);
-  if (goal.period !== currentPeriod()) throw new GoalError("Cannot edit a past month's goals.", 400);
+  if (!goal) throw new GoalError("Objectif introuvable.", 404);
+  if (goal.period !== currentPeriod()) throw new GoalError("Impossible de modifier les objectifs d'un mois passé.", 400);
   return goal;
 }
 
 export async function adjustGoalProgress(teacherId: string, goalId: string, delta: number) {
   const goal = await getOwnedGoal(teacherId, goalId);
-  if (!goal.targetCount) throw new GoalError("This goal has no numeric target.", 400);
+  if (!goal.targetCount) throw new GoalError("Cet objectif n'a pas de cible numérique.", 400);
 
   const nextCount = Math.max(0, Math.min(goal.targetCount, goal.currentCount + delta));
   const achieved = nextCount >= goal.targetCount;
@@ -60,7 +60,7 @@ export async function adjustGoalProgress(teacherId: string, goalId: string, delt
 
 export async function toggleGoal(teacherId: string, goalId: string) {
   const goal = await getOwnedGoal(teacherId, goalId);
-  if (goal.targetCount) throw new GoalError("Use progress tracking for goals with a target.", 400);
+  if (goal.targetCount) throw new GoalError("Utilisez le suivi de progression pour les objectifs avec une cible.", 400);
 
   const achieved = !goal.achieved;
   return prisma.goal.update({

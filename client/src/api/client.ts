@@ -11,7 +11,7 @@ export interface ApiErrorBody {
   error: string;
 }
 
-export function extractErrorMessage(err: unknown, fallback = "Something went wrong."): string {
+export function extractErrorMessage(err: unknown, fallback = "Une erreur est survenue."): string {
   if (axios.isAxiosError(err)) {
     const body = err.response?.data as ApiErrorBody | undefined;
     if (body?.error) return body.error;
@@ -41,10 +41,10 @@ api.interceptors.response.use(
       if (axios.isAxiosError(err) && err.response?.status === 401) {
         // Session expired or was revoked mid-use — clear the cached identity so
         // the route guards redirect to /login instead of the app silently failing.
-        toast.error("Your session has expired. Please sign in again.");
+        toast.error("Votre session a expiré. Veuillez vous reconnecter.");
         queryClient.setQueryData(["me"], undefined);
       } else if (axios.isAxiosError(err) && !err.response) {
-        toast.error("Can't reach the server. Check your connection and try again.");
+        toast.error("Impossible de contacter le serveur. Vérifiez votre connexion et réessayez.");
       } else {
         toast.error(extractErrorMessage(err));
       }

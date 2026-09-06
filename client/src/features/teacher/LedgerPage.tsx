@@ -230,9 +230,9 @@ export function LedgerPage() {
                 <XAxis dataKey="name" tick={CHART_TICK_STYLE} />
                 <YAxis allowDecimals={false} tick={CHART_TICK_STYLE} />
                 <Tooltip contentStyle={CHART_TOOLTIP_STYLE} cursor={CHART_CURSOR_FILL} />
-                <Bar dataKey="PAID" stackId="a" fill={STATUS_COLORS.PAID} />
-                <Bar dataKey="UNPAID" stackId="a" fill={STATUS_COLORS.UNPAID} />
-                <Bar dataKey="INCOMPLETE" stackId="a" fill={STATUS_COLORS.INCOMPLETE} />
+                <Bar dataKey="PAID" name={PAYMENT_STATUS_LABELS.PAID} stackId="a" fill={STATUS_COLORS.PAID} />
+                <Bar dataKey="UNPAID" name={PAYMENT_STATUS_LABELS.UNPAID} stackId="a" fill={STATUS_COLORS.UNPAID} />
+                <Bar dataKey="INCOMPLETE" name={PAYMENT_STATUS_LABELS.INCOMPLETE} stackId="a" fill={STATUS_COLORS.INCOMPLETE} />
               </BarChart>
             </ResponsiveContainer>
           </div>

@@ -31,7 +31,7 @@ const createSchema = z.object({
 export async function createGoalHandler(req: Request, res: Response) {
   const parsed = createSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
   const goal = await createGoal(req.user!.id, parsed.data.title, parsed.data.targetCount);
@@ -43,7 +43,7 @@ const progressSchema = z.object({ delta: z.number().int() });
 export async function progressGoalHandler(req: Request, res: Response) {
   const parsed = progressSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
   try {

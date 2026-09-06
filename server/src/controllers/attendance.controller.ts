@@ -43,7 +43,7 @@ const markSchema = z.object({
 export async function markAttendanceHandler(req: Request, res: Response) {
   const parsed = markSchema.safeParse(req.body);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
   try {
@@ -59,7 +59,7 @@ const clearSchema = z.object({ date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/) });
 export async function clearAttendanceHandler(req: Request, res: Response) {
   const parsed = clearSchema.safeParse(req.query);
   if (!parsed.success) {
-    res.status(400).json({ error: "Invalid input" });
+    res.status(400).json({ error: "Entrée invalide" });
     return;
   }
   try {

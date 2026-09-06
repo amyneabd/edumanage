@@ -53,8 +53,8 @@ export async function requestParentLink(parentId: string, parentCode: string) {
   await createNotification({
     teacherId: pupil.teacherId,
     type: "PARENT_REQUEST",
-    title: "New parent link request",
-    body: `${parent?.name ?? "A parent"} wants to be linked to ${pupil.user.name}.`,
+    title: "Nouvelle demande de lien parent",
+    body: `${parent?.name ?? "Un parent"} souhaite être associé à ${pupil.user.name}.`,
     link: pupil.classId ? `/teacher/classes/${pupil.classId}` : "/teacher/classes",
     dedupeKey: `parent-request:${link.id}`,
   });

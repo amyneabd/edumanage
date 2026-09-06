@@ -228,8 +228,8 @@ export async function markAttendance(teacherId: string, pupilId: string, dateKey
   if (status === "ABSENT") {
     await notifyParentsOfPupil(pupilId, {
       type: "ABSENCE",
-      title: "Absence recorded",
-      body: `${pupil.user.name} was marked absent on ${dateKey}.`,
+      title: "Absence enregistrée",
+      body: `${pupil.user.name} a été marqué(e) absent(e) le ${dateKey}.`,
       link: "/parent/attendance",
       dedupeKey: `absence:${pupilId}:${dateKey}`,
     });
