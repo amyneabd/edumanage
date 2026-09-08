@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import clsx from "clsx";
 import { ArrowLeft, Plus, X } from "lucide-react";
 import {
   addVacationSession,
@@ -29,11 +30,27 @@ import { PAYMENT_STATUS_LABELS } from "../../lib/labels";
 
 const PAYMENT_STATUSES: PaymentStatus[] = ["PAID", "UNPAID", "INCOMPLETE"];
 
+interface DraftVacationSession {
+  date: string;
+  startTime: string;
+  endTime: string;
+}
+
+function dateKey(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+}
+
+function parseDateOnly(key: string): Date {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y!, m! - 1, d!);
+}
+
 export function VacationSessionsPanel({ classId }: { classId: string }) {
   const queryClient = useQueryClient();
-  const [date, setDate] = useState("");
-  const [startTime, setStartTime] = useState("16:00");
-  const [endTime, setEndTime] = useState("17:00");
+  const [drafts, setDrafts] = useState<DraftVacationSession[]>([]);
 
   const vacationQuery = useQuery({ queryKey: ["teacher", "vacation"], queryFn: fetchCurrentVacation });
   const sessionsQuery = useQuery({
@@ -45,11 +62,20 @@ export function VacationSessionsPanel({ classId }: { classId: string }) {
   const invalidate = () =>
     queryClient.invalidateQueries({ queryKey: ["teacher", "classes", classId, "vacation-sessions"] });
 
-  const addMutation = useMutation({
-    mutationFn: () => addVacationSession(classId, { date, startTime, endTime }),
-    onSuccess: () => {
-      toast.success("Séance ponctuelle ajoutée.");
-      setDate("");
+  const addAllMutation = useMutation({
+    mutationFn: (entries: DraftVacationSession[]) =>
+      Promise.allSettled(entries.map((entry) => addVacationSession(classId, entry))),
+    onSuccess: (results) => {
+      const succeeded = results.filter((r) => r.status === "fulfilled").length;
+      const failed = results.length - succeeded;
+      if (succeeded > 0 && failed === 0) {
+        toast.success(`${succeeded} séance${succeeded > 1 ? "s" : ""} ajoutée${succeeded > 1 ? "s" : ""}.`);
+      } else if (succeeded > 0 && failed > 0) {
+        toast.success(`${succeeded} séance${succeeded > 1 ? "s" : ""} ajoutée${succeeded > 1 ? "s" : ""}, ${failed} déjà existante${failed > 1 ? "s" : ""} ignorée${failed > 1 ? "s" : ""}.`);
+      } else {
+        toast.error("Aucune séance n'a pu être ajoutée.");
+      }
+      setDrafts([]);
       invalidate();
     },
   });
@@ -63,6 +89,43 @@ export function VacationSessionsPanel({ classId }: { classId: string }) {
   if (!period) return null;
 
   const sessions: VacationSessionEntry[] = sessionsQuery.data ?? [];
+  const bookedDates = new Set(sessions.map((s) => s.date.slice(0, 10)));
+  const draftByDate = new Map(drafts.map((d) => [d.date, d]));
+
+  const startDate = parseDateOnly(period.startDate.slice(0, 10));
+  const endDate = parseDateOnly(period.endDate.slice(0, 10));
+  const gridStart = new Date(startDate);
+  gridStart.setDate(gridStart.getDate() - gridStart.getDay());
+  const gridEnd = new Date(endDate);
+  gridEnd.setDate(gridEnd.getDate() + (6 - gridEnd.getDay()));
+
+  const cells: { key: string; dayNumber: number; inRange: boolean; booked: boolean; selected: boolean }[] = [];
+  for (const d = new Date(gridStart); d <= gridEnd; d.setDate(d.getDate() + 1)) {
+    const key = dateKey(d);
+    const inRange = d >= startDate && d <= endDate;
+    cells.push({
+      key,
+      dayNumber: d.getDate(),
+      inRange,
+      booked: bookedDates.has(key),
+      selected: draftByDate.has(key),
+    });
+  }
+
+  function toggleDay(key: string) {
+    setDrafts((prev) => {
+      if (prev.some((d) => d.date === key)) return prev.filter((d) => d.date !== key);
+      return [...prev, { date: key, startTime: "16:00", endTime: "17:00" }].sort((a, b) => a.date.localeCompare(b.date));
+    });
+  }
+
+  function updateDraft(key: string, field: "startTime" | "endTime", value: string) {
+    setDrafts((prev) => prev.map((d) => (d.date === key ? { ...d, [field]: value } : d)));
+  }
+
+  function removeDraft(key: string) {
+    setDrafts((prev) => prev.filter((d) => d.date !== key));
+  }
 
   return (
     <Card className="mt-6 p-5">
@@ -106,38 +169,71 @@ export function VacationSessionsPanel({ classId }: { classId: string }) {
         {sessions.length === 0 && <p className="text-xs text-ink-400">Aucune séance ponctuelle ajoutée pour le moment.</p>}
       </div>
 
-      <form
-        className="mt-3 flex flex-wrap items-end gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          addMutation.mutate();
-        }}
-      >
-        <input
-          type="date"
-          required
-          min={period.startDate.slice(0, 10)}
-          max={period.endDate.slice(0, 10)}
-          value={date}
-          onChange={(e) => setDate(e.target.value)}
-          className="focus-ring rounded-sm border border-border-strong bg-surface px-2 py-1.5 text-xs text-ink-700"
-        />
-        <input
-          type="time"
-          value={startTime}
-          onChange={(e) => setStartTime(e.target.value)}
-          className="focus-ring w-24 rounded-sm border border-border-strong bg-surface px-2 py-1.5 text-xs text-ink-700"
-        />
-        <input
-          type="time"
-          value={endTime}
-          onChange={(e) => setEndTime(e.target.value)}
-          className="focus-ring w-24 rounded-sm border border-border-strong bg-surface px-2 py-1.5 text-xs text-ink-700"
-        />
-        <Button size="sm" type="submit" disabled={addMutation.isPending || !date}>
-          {addMutation.isPending ? "Ajout…" : "Ajouter une séance"}
-        </Button>
-      </form>
+      <p className="mt-4 text-xs font-medium text-ink-500">Sélectionnez les jours à ajouter</p>
+      <div className="mt-1 grid grid-cols-7 gap-1 text-center text-[11px] font-medium uppercase tracking-wide text-ink-400">
+        {DAY_NAMES.map((d) => (
+          <span key={d}>{d}</span>
+        ))}
+      </div>
+      <div className="mt-1 grid grid-cols-7 gap-1">
+        {cells.map((cell) => (
+          <button
+            key={cell.key}
+            type="button"
+            disabled={!cell.inRange || cell.booked}
+            aria-pressed={cell.selected}
+            aria-label={`${formatDate(`${cell.key}T00:00:00`, { day: "numeric", month: "long" })}${
+              cell.booked ? " (déjà programmée)" : ""
+            }`}
+            onClick={() => toggleDay(cell.key)}
+            className={clsx(
+              "focus-ring rounded-sm py-1.5 text-xs",
+              !cell.inRange && "cursor-not-allowed text-ink-200",
+              cell.inRange && cell.booked && "cursor-not-allowed bg-ink-100 text-ink-300",
+              cell.inRange && !cell.booked && cell.selected && "bg-accent-600 text-white",
+              cell.inRange && !cell.booked && !cell.selected && "text-ink-700 hover:bg-surface-muted"
+            )}
+          >
+            {cell.dayNumber}
+          </button>
+        ))}
+      </div>
+
+      {drafts.length > 0 && (
+        <div className="mt-3 space-y-2">
+          {drafts.map((d) => (
+            <div key={d.date} className="flex items-center gap-2">
+              <span className="w-28 text-xs text-ink-700">
+                {formatDate(`${d.date}T00:00:00`, { weekday: "short", month: "short", day: "numeric" })}
+              </span>
+              <input
+                type="time"
+                value={d.startTime}
+                onChange={(e) => updateDraft(d.date, "startTime", e.target.value)}
+                className="focus-ring w-24 rounded-sm border border-border-strong bg-surface px-2 py-1.5 text-xs text-ink-700"
+              />
+              <input
+                type="time"
+                value={d.endTime}
+                onChange={(e) => updateDraft(d.date, "endTime", e.target.value)}
+                className="focus-ring w-24 rounded-sm border border-border-strong bg-surface px-2 py-1.5 text-xs text-ink-700"
+              />
+              <button
+                onClick={() => removeDraft(d.date)}
+                className="focus-ring ml-auto rounded-sm text-ink-400 hover:text-danger-600"
+                aria-label={`Retirer le ${d.date} de la sélection`}
+              >
+                <X className="h-4 w-4" strokeWidth={1.8} aria-hidden="true" />
+              </button>
+            </div>
+          ))}
+          <Button size="sm" onClick={() => addAllMutation.mutate(drafts)} disabled={addAllMutation.isPending}>
+            {addAllMutation.isPending
+              ? "Ajout…"
+              : `Ajouter les ${drafts.length} séance${drafts.length > 1 ? "s" : ""}`}
+          </Button>
+        </div>
+      )}
     </Card>
   );
 }

@@ -1,13 +1,15 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen, waitFor } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactElement } from "react";
 import { VacationSessionsPanel } from "./ClassDetailPage";
 import type { VacationPeriod, VacationSessionEntry } from "../../api/types";
 
-const { fetchCurrentVacationMock, fetchVacationSessionsMock } = vi.hoisted(() => ({
+const { fetchCurrentVacationMock, fetchVacationSessionsMock, addVacationSessionMock } = vi.hoisted(() => ({
   fetchCurrentVacationMock: vi.fn(),
   fetchVacationSessionsMock: vi.fn(),
+  addVacationSessionMock: vi.fn(),
 }));
 
 vi.mock("../../api/teacher", async () => {
@@ -16,7 +18,13 @@ vi.mock("../../api/teacher", async () => {
     ...actual,
     fetchCurrentVacation: fetchCurrentVacationMock,
     fetchVacationSessions: fetchVacationSessionsMock,
+    addVacationSession: addVacationSessionMock,
   };
+});
+
+afterEach(() => {
+  cleanup();
+  addVacationSessionMock.mockReset();
 });
 
 function renderWithClient(ui: ReactElement) {
@@ -61,5 +69,73 @@ describe("VacationSessionsPanel", () => {
     fetchVacationSessionsMock.mockResolvedValue([session]);
     renderWithClient(<VacationSessionsPanel classId="c1" />);
     expect(await screen.findByText("10:00–11:00")).toBeInTheDocument();
+  });
+
+  it("renders a clickable calendar day for each day in the vacation period", async () => {
+    fetchCurrentVacationMock.mockResolvedValue(activePeriod);
+    fetchVacationSessionsMock.mockResolvedValue([]);
+    renderWithClient(<VacationSessionsPanel classId="c1" />);
+    const day = await screen.findByRole("button", { name: "10 septembre" });
+    expect(day).toBeEnabled();
+    const outOfRangeDay = screen.getByRole("button", { name: "21 septembre" });
+    expect(outOfRangeDay).toBeDisabled();
+  });
+
+  it("selecting a day adds a draft row with default start/end times", async () => {
+    const user = userEvent.setup();
+    fetchCurrentVacationMock.mockResolvedValue(activePeriod);
+    fetchVacationSessionsMock.mockResolvedValue([]);
+    renderWithClient(<VacationSessionsPanel classId="c1" />);
+    const day = await screen.findByRole("button", { name: "10 septembre" });
+    await user.click(day);
+
+    expect(await screen.findByText("Ajouter les 1 séance")).toBeInTheDocument();
+    const startInput = screen.getByDisplayValue("16:00");
+    const endInput = screen.getByDisplayValue("17:00");
+    expect(startInput).toBeInTheDocument();
+    expect(endInput).toBeInTheDocument();
+  });
+
+  it("disables days that already have a booked session", async () => {
+    const user = userEvent.setup();
+    fetchCurrentVacationMock.mockResolvedValue(activePeriod);
+    const session: VacationSessionEntry = {
+      id: "s1",
+      vacationPeriodId: "vp1",
+      classId: "c1",
+      date: "2026-09-12",
+      startTime: "10:00",
+      endTime: "11:00",
+    };
+    fetchVacationSessionsMock.mockResolvedValue([session]);
+    renderWithClient(<VacationSessionsPanel classId="c1" />);
+
+    const bookedDay = await screen.findByRole("button", { name: "12 septembre (déjà programmée)" });
+    expect(bookedDay).toBeDisabled();
+
+    await user.click(bookedDay);
+    expect(screen.queryByText(/Ajouter les \d+ séance/)).not.toBeInTheDocument();
+  });
+
+  it("submits all drafted sessions in one batch and clears the draft list on success", async () => {
+    const user = userEvent.setup();
+    fetchCurrentVacationMock.mockResolvedValue(activePeriod);
+    fetchVacationSessionsMock.mockResolvedValue([]);
+    addVacationSessionMock.mockResolvedValue({});
+    renderWithClient(<VacationSessionsPanel classId="c1" />);
+
+    const firstDay = await screen.findByRole("button", { name: "10 septembre" });
+    const secondDay = screen.getByRole("button", { name: "11 septembre" });
+    await user.click(firstDay);
+    await user.click(secondDay);
+
+    const submitButton = await screen.findByText("Ajouter les 2 séances");
+    await user.click(submitButton);
+
+    await waitFor(() => expect(addVacationSessionMock).toHaveBeenCalledTimes(2));
+    expect(addVacationSessionMock).toHaveBeenCalledWith("c1", { date: "2026-09-10", startTime: "16:00", endTime: "17:00" });
+    expect(addVacationSessionMock).toHaveBeenCalledWith("c1", { date: "2026-09-11", startTime: "16:00", endTime: "17:00" });
+
+    await waitFor(() => expect(screen.queryByText(/Ajouter les \d+ séance/)).not.toBeInTheDocument());
   });
 });
