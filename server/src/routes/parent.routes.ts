@@ -17,6 +17,7 @@ import {
   readAllParentNotificationsHandler,
   readParentNotificationHandler,
 } from "../controllers/notification.controller.js";
+import { subscribePushHandler, unsubscribePushHandler } from "../controllers/push.controller.js";
 
 export const parentRouter = Router();
 
@@ -37,3 +38,6 @@ parentRouter.get("/children/:pupilId/posts", childPostsHandler);
 parentRouter.get("/notifications", getParentNotifications);
 parentRouter.post("/notifications/:id/read", readParentNotificationHandler);
 parentRouter.post("/notifications/read-all", readAllParentNotificationsHandler);
+
+parentRouter.post("/push/subscribe", subscribePushHandler);
+parentRouter.delete("/push/subscribe", unsubscribePushHandler);

@@ -11,6 +11,7 @@ import { adminRouter } from "./routes/admin.routes.js";
 import { teacherRouter } from "./routes/teacher.routes.js";
 import { pupilRouter } from "./routes/pupil.routes.js";
 import { parentRouter } from "./routes/parent.routes.js";
+import { getPushPublicKeyHandler } from "./controllers/push.controller.js";
 
 export const app = express();
 
@@ -28,6 +29,7 @@ app.use(express.json());
 app.use("/uploads", express.static(uploadsDir));
 
 app.get("/api/health", (_req, res) => res.json({ ok: true }));
+app.get("/api/push/public-key", getPushPublicKeyHandler);
 
 app.use("/api/auth", authRouter);
 app.use("/api/admin", adminRouter);

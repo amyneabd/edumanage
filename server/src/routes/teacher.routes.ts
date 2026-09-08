@@ -36,6 +36,7 @@ import {
   readAllNotificationsHandler,
   readNotificationHandler,
 } from "../controllers/notification.controller.js";
+import { subscribePushHandler, unsubscribePushHandler } from "../controllers/push.controller.js";
 import {
   createGoalHandler,
   deleteGoalHandler,
@@ -113,6 +114,9 @@ teacherRouter.post("/parent-requests/:id/decline", declineParentRequestHandler);
 teacherRouter.get("/notifications", getNotifications);
 teacherRouter.post("/notifications/:id/read", readNotificationHandler);
 teacherRouter.post("/notifications/read-all", readAllNotificationsHandler);
+
+teacherRouter.post("/push/subscribe", subscribePushHandler);
+teacherRouter.delete("/push/subscribe", unsubscribePushHandler);
 
 teacherRouter.get("/goals", getGoals);
 teacherRouter.post("/goals", createGoalHandler);
