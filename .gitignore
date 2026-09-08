@@ -17,3 +17,4 @@ dist-ssr
 *.sw?
 .worktrees/
 .superpowers/
+.claude/settings.local.json
