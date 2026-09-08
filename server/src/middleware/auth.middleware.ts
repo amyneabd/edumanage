@@ -26,21 +26,27 @@ async function loadAuthedUser(supabaseUserId: string): Promise<AuthedUser | null
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
   const { accessToken, refreshToken } = getAuthCookies(req);
-  if (!accessToken) {
-    res.status(401).json({ error: "Non authentifié" });
-    return;
-  }
 
-  const { data, error } = await supabaseAuth.auth.getUser(accessToken);
-  if (!error && data.user) {
-    const authedUser = await loadAuthedUser(data.user.id);
-    if (!authedUser) {
-      res.status(401).json({ error: "Non authentifié" });
+  // The access-token cookie expires after 1 hour (its Max-Age tracks the
+  // Supabase session's expires_in) while the refresh-token cookie lives for
+  // 30 days. So once an hour has passed since login — including the very
+  // common case of closing the browser/tab and reopening it later — the
+  // browser has already dropped the access-token cookie but still holds the
+  // refresh-token cookie. That must fall through to the refresh flow below
+  // instead of failing fast, otherwise every session silently expires after
+  // an hour even though the refresh token is still valid.
+  if (accessToken) {
+    const { data, error } = await supabaseAuth.auth.getUser(accessToken);
+    if (!error && data.user) {
+      const authedUser = await loadAuthedUser(data.user.id);
+      if (!authedUser) {
+        res.status(401).json({ error: "Non authentifié" });
+        return;
+      }
+      req.user = authedUser;
+      next();
       return;
     }
-    req.user = authedUser;
-    next();
-    return;
   }
 
   if (!refreshToken) {

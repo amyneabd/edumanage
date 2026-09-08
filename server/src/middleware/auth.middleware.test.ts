@@ -85,6 +85,31 @@ describe("requireAuth", () => {
     expect(next).toHaveBeenCalled();
   });
 
+  it("refreshes the session when the access-token cookie is missing but the refresh token is valid", async () => {
+    // The access-token cookie's Max-Age is short (tracks Supabase's
+    // expires_in, typically 1 hour) while the refresh-token cookie lasts 30
+    // days. So once the access-token cookie has naturally expired — e.g. the
+    // browser was closed and reopened over an hour later — only the refresh
+    // token arrives on the request. That must still succeed via the refresh
+    // flow instead of failing fast, otherwise sessions silently die after an
+    // hour even though the refresh token is still good.
+    const req = makeReq({ "sb-refresh-token": "rt" });
+    const res = makeRes();
+    const next = vi.fn();
+    refreshSessionMock.mockResolvedValueOnce({
+      data: { session: { access_token: "new-at", refresh_token: "new-rt", expires_in: 3600, user: { id: "sb-user-1" } } },
+      error: null,
+    });
+    findUniqueMock.mockResolvedValueOnce(DB_USER);
+
+    await requireAuth(req, res, next);
+
+    expect(getUserMock).not.toHaveBeenCalled();
+    expect(res.cookie).toHaveBeenCalled();
+    expect(req.user).toEqual(DB_USER);
+    expect(next).toHaveBeenCalled();
+  });
+
   it("clears cookies and returns 401 when both tokens are invalid", async () => {
     const req = makeReq({ "sb-access-token": "expired", "sb-refresh-token": "expired" });
     const res = makeRes();
