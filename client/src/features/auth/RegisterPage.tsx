@@ -1,5 +1,5 @@
 import { Link, useNavigate } from "react-router-dom";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation } from "@tanstack/react-query";
 import { useForm, type FieldErrors } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import clsx from "clsx";
@@ -20,7 +20,6 @@ const CLASS_TYPES: ClassType[] = ["SCIENCE", "MATH", "INFO", "ECO"];
 export function RegisterPage() {
   useDocumentTitle("Créer un compte");
   const navigate = useNavigate();
-  const queryClient = useQueryClient();
 
   const {
     register: registerField,
@@ -52,9 +51,8 @@ export function RegisterPage() {
       values.role === "PUPIL"
         ? register({ ...values, teacherCode: values.teacherCode.toUpperCase() })
         : register(values),
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["me"] });
-      navigate("/verify-email");
+    onSuccess: async (_, variables) => {
+      navigate("/verify-email", { state: { email: variables.email } });
     },
   });
 

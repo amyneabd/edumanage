@@ -1,30 +1,24 @@
 import "dotenv/config";
 import { PrismaClient } from "@prisma/client";
-import bcrypt from "bcryptjs";
+import { supabaseAdmin } from "../src/utils/supabaseAdmin.js";
 
 const prisma = new PrismaClient();
 
 async function main() {
   const email = process.env.ADMIN_EMAIL!;
   const password = process.env.ADMIN_PASSWORD!;
-
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
     console.log(`Admin account already exists: ${email}`);
     return;
   }
 
-  const passwordHash = await bcrypt.hash(password, 10);
-  await prisma.user.create({
-    data: {
-      email,
-      passwordHash,
-      name: "Admin",
-      role: "ADMIN",
-      status: "ACTIVE",
-    },
-  });
+  const { data, error } = await supabaseAdmin.auth.admin.createUser({ email, password, email_confirm: true });
+  if (error || !data.user) throw new Error(`Failed to create Supabase admin user: ${error?.message}`);
 
+  await prisma.user.create({
+    data: { email, supabaseId: data.user.id, name: "Admin", role: "ADMIN", status: "ACTIVE" },
+  });
   console.log(`Seeded admin account: ${email}`);
 }
 

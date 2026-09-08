@@ -58,34 +58,6 @@ async function sendMail(params: {
 }
 
 /**
- * Sends a password reset email. See sendMail for the SMTP-vs-HTTP-API
- * rationale and the dev-fallback behavior.
- */
-export async function sendPasswordResetEmail(to: string, resetUrl: string): Promise<{ delivered: boolean }> {
-  return sendMail({
-    to,
-    subject: "Réinitialisez votre mot de passe Bachandi",
-    text: `Nous avons reçu une demande de réinitialisation de votre mot de passe Bachandi. Ce lien expire dans 1 heure :\n\n${resetUrl}\n\nSi vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité.`,
-    html: `<p>Nous avons reçu une demande de réinitialisation de votre mot de passe Bachandi. Ce lien expire dans 1 heure :</p><p><a href="${resetUrl}">${resetUrl}</a></p><p>Si vous n'êtes pas à l'origine de cette demande, vous pouvez ignorer cet e-mail en toute sécurité.</p>`,
-    logLabel: `Password reset link for ${to}:\n  ${resetUrl}`,
-  });
-}
-
-/**
- * Sends an email verification link for a newly created (or not-yet-verified)
- * account. Same dev fallback as the password reset email.
- */
-export async function sendVerificationEmail(to: string, verifyUrl: string): Promise<{ delivered: boolean }> {
-  return sendMail({
-    to,
-    subject: "Vérifiez votre adresse e-mail Bachandi",
-    text: `Bienvenue sur Bachandi ! Veuillez vérifier votre adresse e-mail. Ce lien expire dans 24 heures :\n\n${verifyUrl}\n\nSi vous n'êtes pas à l'origine de la création de ce compte, vous pouvez ignorer cet e-mail en toute sécurité.`,
-    html: `<p>Bienvenue sur Bachandi ! Veuillez vérifier votre adresse e-mail. Ce lien expire dans 24 heures :</p><p><a href="${verifyUrl}">${verifyUrl}</a></p><p>Si vous n'êtes pas à l'origine de la création de ce compte, vous pouvez ignorer cet e-mail en toute sécurité.</p>`,
-    logLabel: `Verification link for ${to}:\n  ${verifyUrl}`,
-  });
-}
-
-/**
  * Sends an urgent alert email to a parent (absence, payment due, missing
  * submission). Best-effort: callers should not let a delivery failure here
  * block the underlying in-app notification from being created.

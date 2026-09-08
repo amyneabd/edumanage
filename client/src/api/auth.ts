@@ -37,7 +37,7 @@ export async function login(email: string, password: string) {
 }
 
 export async function register(input: TeacherRegisterInput | PupilRegisterInput | ParentRegisterInput) {
-  const { data } = await api.post<{ id: string; role: string; status: string; name: string; devVerifyUrl?: string }>(
+  const { data } = await api.post<{ id: string; role: string; status: string; name: string }>(
     "/auth/register",
     input,
   );
@@ -49,23 +49,23 @@ export async function logout() {
 }
 
 export async function forgotPassword(email: string) {
-  const { data } = await api.post<{ message: string; devResetUrl?: string }>("/auth/forgot-password", { email });
+  const { data } = await api.post<{ message: string }>("/auth/forgot-password", { email });
   return data;
 }
 
-export async function resetPassword(token: string, password: string) {
-  await api.post("/auth/reset-password", { token, password });
+export async function resetPassword(tokenHash: string, password: string) {
+  await api.post("/auth/reset-password", { token_hash: tokenHash, password });
 }
 
 export async function changePassword(currentPassword: string, newPassword: string) {
   await api.post("/auth/change-password", { currentPassword, newPassword });
 }
 
-export async function verifyEmail(token: string) {
-  await api.post("/auth/verify-email", { token });
+export async function verifyEmail(tokenHash: string) {
+  await api.post("/auth/verify-email", { token_hash: tokenHash });
 }
 
-export async function resendVerification() {
-  const { data } = await api.post<{ message: string; devVerifyUrl?: string }>("/auth/resend-verification");
+export async function resendVerification(email: string) {
+  const { data } = await api.post("/auth/resend-verification", { email });
   return data;
 }

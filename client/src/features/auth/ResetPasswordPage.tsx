@@ -16,7 +16,7 @@ export function ResetPasswordPage() {
   useDocumentTitle("Définir un nouveau mot de passe");
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token") ?? "";
+  const tokenHash = searchParams.get("token_hash") ?? "";
 
   const {
     register,
@@ -29,13 +29,13 @@ export function ResetPasswordPage() {
   });
 
   const mutation = useMutation({
-    mutationFn: (values: ResetPasswordFormValues) => resetPassword(token, values.password),
+    mutationFn: (values: ResetPasswordFormValues) => resetPassword(tokenHash, values.password),
     onSuccess: () => {
       navigate("/login", { replace: true });
     },
   });
 
-  if (!token) {
+  if (!tokenHash) {
     return (
       <div className="flex min-h-svh">
         <div className="flex w-full flex-col justify-center px-6 py-12 sm:px-12 lg:w-1/2 lg:px-20">

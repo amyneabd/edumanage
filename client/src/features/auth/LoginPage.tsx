@@ -2,8 +2,9 @@ import { Link, useNavigate } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import axios from "axios";
 import { fetchMe, login } from "../../api/auth";
-import { extractErrorMessage } from "../../api/client";
+import { extractErrorMessage, type ApiErrorBody } from "../../api/client";
 import { Button } from "../../components/Button";
 import { ErrorState } from "../../components/Feedback";
 import { FieldError } from "../../components/FieldError";
@@ -35,6 +36,11 @@ export function LoginPage() {
       await queryClient.invalidateQueries({ queryKey: ["me"] });
       const me = await queryClient.fetchQuery<Me>({ queryKey: ["me"], queryFn: fetchMe });
       navigate(roleHome(me));
+    },
+    onError: (error, variables) => {
+      if (axios.isAxiosError(error) && (error.response?.data as ApiErrorBody)?.code === "EMAIL_NOT_CONFIRMED") {
+        navigate("/verify-email", { state: { email: variables.email } });
+      }
     },
   });
 

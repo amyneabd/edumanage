@@ -9,6 +9,7 @@ export const api = axios.create({
 
 export interface ApiErrorBody {
   error: string;
+  code?: string;
 }
 
 export function extractErrorMessage(err: unknown, fallback = "Une erreur est survenue."): string {

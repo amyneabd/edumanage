@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireActive, requireAuth, requireEmailVerified, requireRole } from "../middleware/auth.middleware.js";
+import { requireActive, requireAuth, requireRole } from "../middleware/auth.middleware.js";
 import { upload } from "../middleware/upload.middleware.js";
 import {
   allParentRequestsHandler,
@@ -60,7 +60,7 @@ import {
 
 export const teacherRouter = Router();
 
-teacherRouter.use(requireAuth, requireRole("TEACHER"), requireEmailVerified, requireActive);
+teacherRouter.use(requireAuth, requireRole("TEACHER"), requireActive);
 
 teacherRouter.get("/overview", overview);
 

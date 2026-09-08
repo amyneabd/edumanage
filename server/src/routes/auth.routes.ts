@@ -22,5 +22,5 @@ authRouter.get("/me", requireAuth, me);
 authRouter.post("/forgot-password", authActionRateLimiter, forgotPassword);
 authRouter.post("/reset-password", authActionRateLimiter, resetPasswordHandler);
 authRouter.post("/verify-email", authActionRateLimiter, verifyEmailHandler);
-authRouter.post("/resend-verification", requireAuth, authActionRateLimiter, resendVerificationHandler);
+authRouter.post("/resend-verification", authActionRateLimiter, resendVerificationHandler);
 authRouter.post("/change-password", requireAuth, authActionRateLimiter, changePasswordHandler);

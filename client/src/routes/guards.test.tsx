@@ -1,5 +1,5 @@
-import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router-dom";
 import { roleHome, RequireRole } from "./guards";
 import type { Me } from "../api/types";
@@ -10,53 +10,73 @@ const baseUser: Me = {
   email: "pat@test.com",
   role: "PUPIL",
   status: "ACTIVE",
-  emailVerified: false,
-  emailVerificationRequired: true,
   teacherCode: null,
   parentCode: null,
 };
 
 describe("roleHome", () => {
-  it("sends an unverified user to /verify-email when verification is required", () => {
-    expect(roleHome({ ...baseUser, emailVerified: false, emailVerificationRequired: true })).toBe("/verify-email");
+  it("routes ADMIN to /admin regardless of status", () => {
+    expect(roleHome({ ...baseUser, role: "ADMIN", status: "PENDING" })).toBe("/admin");
   });
 
-  it("skips the verify-email redirect when verification is not required", () => {
-    expect(roleHome({ ...baseUser, emailVerified: false, emailVerificationRequired: false })).toBe("/pupil/home");
+  it("routes any non-ACTIVE non-admin user to /pending", () => {
+    expect(roleHome({ ...baseUser, role: "TEACHER", status: "PENDING" })).toBe("/pending");
   });
 
-  it("still honors emailVerified=true regardless of the requirement flag", () => {
-    expect(roleHome({ ...baseUser, emailVerified: true, emailVerificationRequired: true })).toBe("/pupil/home");
+  it("routes an ACTIVE TEACHER to /teacher/overview", () => {
+    expect(roleHome({ ...baseUser, role: "TEACHER", status: "ACTIVE" })).toBe("/teacher/overview");
+  });
+
+  it("routes an ACTIVE PARENT to /parent/home", () => {
+    expect(roleHome({ ...baseUser, role: "PARENT", status: "ACTIVE" })).toBe("/parent/home");
+  });
+
+  it("routes an ACTIVE PUPIL to /pupil/home", () => {
+    expect(roleHome({ ...baseUser, role: "PUPIL", status: "ACTIVE" })).toBe("/pupil/home");
   });
 });
 
 const { useAuthMock } = vi.hoisted(() => ({ useAuthMock: vi.fn() }));
 vi.mock("../hooks/useAuth", () => ({ useAuth: useAuthMock }));
 
-function renderRequireRole() {
+afterEach(cleanup);
+
+function renderRequireRole(guardRole: Me["role"] = "PUPIL") {
   return render(
-    <MemoryRouter initialEntries={["/pupil"]}>
+    <MemoryRouter initialEntries={["/protected"]}>
       <Routes>
-        <Route element={<RequireRole role="PUPIL" />}>
-          <Route path="/pupil" element={<div>pupil area</div>} />
+        <Route element={<RequireRole role={guardRole} />}>
+          <Route path="/protected" element={<div>protected area</div>} />
         </Route>
-        <Route path="/verify-email" element={<div>verify email page</div>} />
         <Route path="/pending" element={<div>pending page</div>} />
+        <Route path="/teacher/overview" element={<div>teacher overview page</div>} />
       </Routes>
     </MemoryRouter>
   );
 }
 
 describe("RequireRole", () => {
-  it("redirects to /verify-email when unverified and verification is required", () => {
-    useAuthMock.mockReturnValue({ user: { ...baseUser, emailVerified: false, emailVerificationRequired: true }, isLoading: false });
-    renderRequireRole();
-    expect(screen.getByText("verify email page")).toBeInTheDocument();
+  it("renders the outlet for an ADMIN user, bypassing the status check", () => {
+    useAuthMock.mockReturnValue({ user: { ...baseUser, role: "ADMIN", status: "PENDING" }, isLoading: false });
+    renderRequireRole("ADMIN");
+    expect(screen.getByText("protected area")).toBeInTheDocument();
   });
 
-  it("renders the protected route when unverified but verification is not required", () => {
-    useAuthMock.mockReturnValue({ user: { ...baseUser, emailVerified: false, emailVerificationRequired: false }, isLoading: false });
-    renderRequireRole();
-    expect(screen.getByText("pupil area")).toBeInTheDocument();
+  it("redirects a non-ACTIVE (pending) non-admin user to /pending", () => {
+    useAuthMock.mockReturnValue({ user: { ...baseUser, role: "PUPIL", status: "PENDING" }, isLoading: false });
+    renderRequireRole("PUPIL");
+    expect(screen.getByText("pending page")).toBeInTheDocument();
+  });
+
+  it("renders the outlet when the user's role matches and status is ACTIVE", () => {
+    useAuthMock.mockReturnValue({ user: { ...baseUser, role: "PUPIL", status: "ACTIVE" }, isLoading: false });
+    renderRequireRole("PUPIL");
+    expect(screen.getByText("protected area")).toBeInTheDocument();
+  });
+
+  it("redirects to the user's role home when the role doesn't match", () => {
+    useAuthMock.mockReturnValue({ user: { ...baseUser, role: "TEACHER", status: "ACTIVE" }, isLoading: false });
+    renderRequireRole("PUPIL");
+    expect(screen.getByText("teacher overview page")).toBeInTheDocument();
   });
 });

@@ -38,17 +38,6 @@ export function ForgotPasswordPage() {
             <>
               <h1 className="mt-6 text-2xl font-bold text-ink-900">Vérifiez votre e-mail</h1>
               <p className="mt-2 text-sm text-ink-500">{mutation.data.message}</p>
-              {mutation.data.devResetUrl && (
-                <div className="mt-4 rounded-sm border border-dashed border-border-strong bg-canvas p-3 text-xs text-ink-700">
-                  <p className="font-medium text-ink-900">Mode développement — SMTP non configuré</p>
-                  <Link
-                    to={mutation.data.devResetUrl.replace(window.location.origin, "")}
-                    className="focus-ring mt-1 block break-all rounded-sm font-mono text-[11px] text-accent-600 underline underline-offset-2"
-                  >
-                    {mutation.data.devResetUrl}
-                  </Link>
-                </div>
-              )}
               <Link
                 to="/login"
                 className="focus-ring mt-6 block rounded-sm text-center text-sm font-medium text-accent-600 hover:text-accent-700"

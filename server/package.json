@@ -20,13 +20,11 @@
   "dependencies": {
     "@prisma/client": "6.19.3",
     "@supabase/supabase-js": "^2.112.4",
-    "bcryptjs": "^3.0.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
     "express-rate-limit": "^8.6.2",
-    "jsonwebtoken": "^9.0.3",
     "multer": "^2.2.0",
     "zod": "^4.4.3"
   },
@@ -34,7 +32,6 @@
     "@types/cookie-parser": "^1.4.10",
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.6",
-    "@types/jsonwebtoken": "^9.0.10",
     "@types/multer": "^2.2.0",
     "@types/node": "^26.4.0",
     "prisma": "6.19.3",
