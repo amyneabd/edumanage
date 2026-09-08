@@ -1,5 +1,5 @@
 import { lazy, Suspense, type ReactElement } from "react";
-import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import {
   LayoutDashboard,
   Users2,
@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { AppLayout } from "./components/AppLayout";
 import { Spinner } from "./components/Feedback";
-import { RequireAuth, RequireRole } from "./routes/guards";
+import { RedirectIfAuthenticated, RequireAuth, RequireRole, RootRedirect } from "./routes/guards";
 
 const LoginPage = lazy(() => import("./features/auth/LoginPage").then((m) => ({ default: m.LoginPage })));
 const RegisterPage = lazy(() =>
@@ -123,8 +123,10 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={withSuspense(<LoginPage />)} />
-        <Route path="/register" element={withSuspense(<RegisterPage />)} />
+        <Route element={<RedirectIfAuthenticated />}>
+          <Route path="/login" element={withSuspense(<LoginPage />)} />
+          <Route path="/register" element={withSuspense(<RegisterPage />)} />
+        </Route>
         <Route path="/forgot-password" element={withSuspense(<ForgotPasswordPage />)} />
         <Route path="/reset-password" element={withSuspense(<ResetPasswordPage />)} />
         <Route path="/verify-email" element={withSuspense(<VerifyEmailPage />)} />
@@ -178,8 +180,8 @@ export default function App() {
           </Route>
         </Route>
 
-        <Route path="/" element={<Navigate to="/login" replace />} />
-        <Route path="*" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<RootRedirect />} />
+        <Route path="*" element={<RootRedirect />} />
       </Routes>
     </BrowserRouter>
   );
