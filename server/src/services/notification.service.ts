@@ -2,6 +2,7 @@ import { prisma } from "../utils/prisma.js";
 import type { NotificationType } from "@prisma/client";
 import { currentPeriod, previousPeriod } from "../utils/period.js";
 import { sendParentAlertEmail } from "../utils/mailer.js";
+import { sendPushToUser } from "./push.service.js";
 
 // Urgent for a parent to know about right away — these also trigger an email.
 // POST_PUBLISHED is informational only and stays in-app.
@@ -38,6 +39,13 @@ export async function createNotification(input: CreateNotificationInput) {
       dedupeKey: input.dedupeKey ?? null,
     },
   });
+
+  const recipientId = input.teacherId ?? input.parentId!;
+  try {
+    await sendPushToUser(recipientId, { title: input.title, body: input.body, link: input.link });
+  } catch (err) {
+    console.error("[push] failed to send push notification", err);
+  }
 
   if (input.parentId && URGENT_PARENT_EMAIL_TYPES.includes(input.type)) {
     const parent = await prisma.user.findUnique({ where: { id: input.parentId } });
@@ -225,5 +233,28 @@ export async function notifyParentsOfPupil(
   const links = await prisma.parentLink.findMany({ where: { pupilId, status: "ACTIVE" }, select: { parentId: true } });
   for (const { parentId } of links) {
     await createNotification({ ...input, parentId });
+  }
+}
+
+/**
+ * Proactively runs the lazy notification syncs for every active teacher and
+ * parent, so PAYMENT_DUE / MONTHLY_RECAP / SUBMISSION_MISSING notifications
+ * (and their pushes) are created ahead of the next time someone opens the
+ * bell, instead of only on-read. Safe to call repeatedly — every sync
+ * function below is deduped via Notification.dedupeKey, so re-running this
+ * (e.g. after a process restart) never creates duplicate rows or re-sends
+ * push notifications for an event already delivered.
+ */
+export async function runDailyNotificationSync(): Promise<void> {
+  const teachers = await prisma.user.findMany({ where: { role: "TEACHER", status: "ACTIVE" }, select: { id: true } });
+  for (const { id } of teachers) {
+    await syncPaymentDueNotifications(id);
+    await syncMonthlyRecapNotifications(id);
+  }
+
+  const parents = await prisma.user.findMany({ where: { role: "PARENT", status: "ACTIVE" }, select: { id: true } });
+  for (const { id } of parents) {
+    await syncPaymentDueNotificationsForParent(id);
+    await syncSubmissionMissingNotificationsForParent(id);
   }
 }
