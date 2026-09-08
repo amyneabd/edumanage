@@ -111,6 +111,25 @@ describe("requireAuth", () => {
     expect(res.status).toHaveBeenCalledWith(401);
     expect(next).not.toHaveBeenCalled();
   });
+
+  it("clears cookies and returns 401 when the refresh succeeds but no matching Prisma user exists", async () => {
+    const req = makeReq({ "sb-access-token": "expired", "sb-refresh-token": "rt" });
+    const res = makeRes();
+    const next = vi.fn();
+    getUserMock.mockResolvedValueOnce({ data: { user: null }, error: { message: "expired" } });
+    refreshSessionMock.mockResolvedValueOnce({
+      data: { session: { access_token: "new-at", refresh_token: "new-rt", expires_in: 3600, user: { id: "sb-orphan" } } },
+      error: null,
+    });
+    findUniqueMock.mockResolvedValueOnce(null);
+
+    await requireAuth(req, res, next);
+
+    expect(res.clearCookie).toHaveBeenCalledWith("sb-access-token", expect.anything());
+    expect(res.clearCookie).toHaveBeenCalledWith("sb-refresh-token", expect.anything());
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(next).not.toHaveBeenCalled();
+  });
 });
 
 describe("requireRole", () => {

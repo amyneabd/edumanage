@@ -59,6 +59,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 
   const authedUser = await loadAuthedUser(refreshed.session.user.id);
   if (!authedUser) {
+    clearAuthCookies(res);
     res.status(401).json({ error: "Non authentifié" });
     return;
   }
