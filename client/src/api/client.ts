@@ -30,6 +30,7 @@ const SILENT_ERROR_PREFIXES = [
   "/auth/change-password",
   "/auth/forgot-password",
   "/auth/reset-password",
+  "/push/public-key",
 ];
 
 api.interceptors.response.use(

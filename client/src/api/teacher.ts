@@ -17,6 +17,7 @@ import type {
   PupilDetail,
   PupilLedger,
   PupilRequest,
+  PushSubscriptionPayload,
   ScheduleSlot,
   SwapRequestStatus,
   TeacherParentRequest,
@@ -230,6 +231,14 @@ export async function markNotificationRead(id: string) {
 
 export async function markAllNotificationsRead() {
   await api.post("/teacher/notifications/read-all");
+}
+
+export async function subscribeToPush(payload: PushSubscriptionPayload): Promise<void> {
+  await api.post("/teacher/push/subscribe", payload);
+}
+
+export async function unsubscribeFromPush(endpoint: string): Promise<void> {
+  await api.delete("/teacher/push/subscribe", { data: { endpoint } });
 }
 
 export async function fetchGoals(period?: string): Promise<GoalsResponse> {

@@ -9,6 +9,7 @@ import type {
   PupilGrades,
   PupilHome,
   PupilLedger,
+  PushSubscriptionPayload,
   ScheduleViewResponse,
 } from "./types";
 
@@ -75,4 +76,12 @@ export async function markParentNotificationRead(id: string) {
 
 export async function markAllParentNotificationsRead() {
   await api.post("/parent/notifications/read-all");
+}
+
+export async function subscribeToPush(payload: PushSubscriptionPayload): Promise<void> {
+  await api.post("/parent/push/subscribe", payload);
+}
+
+export async function unsubscribeFromPush(endpoint: string): Promise<void> {
+  await api.delete("/parent/push/subscribe", { data: { endpoint } });
 }
