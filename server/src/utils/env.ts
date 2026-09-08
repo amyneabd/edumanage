@@ -20,6 +20,14 @@ const supabaseStorage = supabaseStorageBucket
   ? { url: supabaseUrl, serviceRoleKey: supabaseServiceRoleKey, bucket: supabaseStorageBucket }
   : null;
 
+const vapidPublicKey = process.env.VAPID_PUBLIC_KEY;
+const vapidPrivateKey = process.env.VAPID_PRIVATE_KEY;
+const vapidSubject = process.env.VAPID_SUBJECT;
+const vapid =
+  vapidPublicKey && vapidPrivateKey && vapidSubject
+    ? { publicKey: vapidPublicKey, privateKey: vapidPrivateKey, subject: vapidSubject }
+    : null;
+
 export const env = {
   port: Number(process.env.PORT ?? 4000),
   clientOrigin: process.env.CLIENT_ORIGIN ?? "http://localhost:5173",
@@ -30,5 +38,6 @@ export const env = {
   supabaseAnonKey,
   supabaseServiceRoleKey,
   supabaseStorage,
+  vapid,
   isProduction: process.env.NODE_ENV === "production",
 };
