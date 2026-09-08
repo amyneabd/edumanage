@@ -7,6 +7,7 @@ import { Menu, X } from "lucide-react";
 import { useAuth } from "../hooks/useAuth";
 import { logout } from "../api/auth";
 import { NotificationBell } from "./NotificationBell";
+import { PushToggle } from "./PushToggle";
 import { Logo } from "./Logo";
 
 interface NavItem {
@@ -147,11 +148,17 @@ export function AppLayout({
             <Menu className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
             <span className="text-sm font-semibold text-ink-900">EduManage</span>
           </button>
-          {notifications && <NotificationBell role={notifications} />}
+          {notifications && (
+            <div className="flex items-center gap-1">
+              <PushToggle role={notifications} />
+              <NotificationBell role={notifications} />
+            </div>
+          )}
         </div>
 
         {notifications && (
-          <div className="hidden items-center justify-end border-b border-border bg-surface px-8 py-3 lg:flex">
+          <div className="hidden items-center justify-end gap-1 border-b border-border bg-surface px-8 py-3 lg:flex">
+            <PushToggle role={notifications} />
             <NotificationBell role={notifications} />
           </div>
         )}
