@@ -4,12 +4,20 @@ import { usePushSubscription } from "../hooks/usePushSubscription";
 export function PushToggle({ role }: { role: "teacher" | "parent" }) {
   const { status, enable, disable } = usePushSubscription(role);
 
-  if (status === "unsupported" || status === "loading" || status === "unconfigured") return null;
+  if (status === "unsupported" || status === "loading") return null;
 
   if (status === "denied") {
     return (
       <p className="text-xs text-ink-400">
         Notifications bloquées — activez-les dans les paramètres de votre navigateur.
+      </p>
+    );
+  }
+
+  if (status === "unconfigured") {
+    return (
+      <p className="text-xs text-ink-400">
+        Notifications push non configurées sur ce serveur.
       </p>
     );
   }

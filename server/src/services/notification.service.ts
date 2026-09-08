@@ -42,7 +42,7 @@ export async function createNotification(input: CreateNotificationInput) {
 
   const recipientId = input.teacherId ?? input.parentId!;
   try {
-    await sendPushToUser(recipientId, { title: input.title, body: input.body, link: input.link });
+    await sendPushToUser(recipientId, { title: input.title, body: input.body, link: input.link ?? null });
   } catch (err) {
     console.error("[push] failed to send push notification", err);
   }

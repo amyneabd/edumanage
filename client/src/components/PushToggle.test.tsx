@@ -24,6 +24,12 @@ describe("PushToggle", () => {
     expect(screen.getByText(/notifications bloquées/i)).toBeInTheDocument();
   });
 
+  it("shows an inline message when push notifications are unconfigured server-side", () => {
+    usePushSubscriptionMock.mockReturnValue({ status: "unconfigured", enable: vi.fn(), disable: vi.fn() });
+    render(<PushToggle role="teacher" />);
+    expect(screen.getByText(/notifications push non configurées/i)).toBeInTheDocument();
+  });
+
   it("shows a subscribe button and calls enable() when not yet subscribed", async () => {
     const user = userEvent.setup();
     const enable = vi.fn();
